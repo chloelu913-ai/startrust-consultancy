@@ -1605,8 +1605,8 @@ pre,code{overflow-x:auto;max-width:100%}
     <p>We use essential and analytics cookies to improve your experience. By clicking "Accept All", you agree to our <a href="#" onclick="openModal('cookies');return false;">Cookie Policy</a> and <a href="#" onclick="openModal('privacy');return false;">Privacy Policy</a>.</p>
   </div>
   <div class="cookie-btns">
-    <button class="cookie-decline" onclick="dismissCookies()">Essential Only</button>
-    <button class="cookie-accept" onclick="acceptCookies()">✓ Accept All</button>
+    <button class="cookie-decline" onclick="dismissCookies();return false;">Essential Only</button>
+    <button class="cookie-accept" onclick="acceptCookies();return false;">✓ Accept All</button>
   </div>
 </div>
 
@@ -1784,8 +1784,8 @@ function openArticle(slug){openModal('article-'+slug);}
 /* COOKIES */
 function _setCookiePref(v){try{localStorage.setItem('st_cookies',v);}catch(e){}try{sessionStorage.setItem('st_cookies',v);}catch(e){}}
 function _getCookiePref(){try{var l=localStorage.getItem('st_cookies');if(l)return l;}catch(e){}try{var s=sessionStorage.getItem('st_cookies');if(s)return s;}catch(e){}return null;}
-function acceptCookies(){_setCookiePref('accepted');var b=document.getElementById('cookieBanner');b.classList.remove('show');setTimeout(function(){b.style.display='none';},420);}
-function dismissCookies(){_setCookiePref('essential');var b=document.getElementById('cookieBanner');b.classList.remove('show');setTimeout(function(){b.style.display='none';},420);}
+function acceptCookies(){_setCookiePref('accepted');var b=document.getElementById('cookieBanner');b.classList.remove('show');setTimeout(function(){b.style.display='none';},420);return false;}
+function dismissCookies(){_setCookiePref('essential');var b=document.getElementById('cookieBanner');b.classList.remove('show');setTimeout(function(){b.style.display='none';},420);return false;}
 function _showCookieBanner(){if(!_getCookiePref()){var b=document.getElementById('cookieBanner');b.style.display='flex';requestAnimationFrame(function(){requestAnimationFrame(function(){b.classList.add('show');});});}}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){setTimeout(_showCookieBanner,600);});}else{setTimeout(_showCookieBanner,600);}
 
@@ -2003,10 +2003,10 @@ function addMessage(role,text){
   messagesDiv.appendChild(div);
   // Scroll message box to bottom
   messagesDiv.scrollTop=messagesDiv.scrollHeight;
-  // If it's a bot reply, smoothly scroll the PAGE so the message is visible
+  // Scroll within the messages container only, not the whole page
   if(isBot){
     setTimeout(()=>{
-      div.scrollIntoView({behavior:'smooth',block:'nearest'});
+      messagesDiv.scrollTop=messagesDiv.scrollHeight;
     },100);
   }
 }
