@@ -1430,15 +1430,15 @@ pre,code{overflow-x:auto;max-width:100%}
     <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1.2rem">Fill in the form below and we'll reply within one business day.</p>
     <form id="contactForm" action="https://formspree.io/f/mqejzeao" method="POST" novalidate>
     <div class="form-row">
-      <div class="form-group"><label for="fname">First Name <span style="color:var(--rose)">*</span></label><input type="text" id="fname" name="firstName" placeholder="Jane" autocomplete="given-name" required></div>
-      <div class="form-group"><label for="lname">Last Name <span style="color:var(--rose)">*</span></label><input type="text" id="lname" name="lastName" placeholder="Tan" autocomplete="family-name" required></div>
+      <div class="form-group"><label for="fname">First Name <span style="color:var(--rose)">*</span></label><input type="text" id="fname" name="First Name" placeholder="Jane" autocomplete="given-name" required></div>
+      <div class="form-group"><label for="lname">Last Name <span style="color:var(--rose)">*</span></label><input type="text" id="lname" name="Last Name" placeholder="Tan" autocomplete="family-name" required></div>
     </div>
     <div class="form-group"><label for="email">Email Address <span style="color:var(--rose)">*</span></label><input type="email" id="email" name="email" placeholder="jane@company.com" autocomplete="email" required></div>
-    <div class="form-group"><label for="phone">Phone / WhatsApp <span style="color:var(--rose)">*</span></label><input type="tel" id="phone" name="phone" placeholder="+65 9000 0000" autocomplete="tel" required></div>
-    <div class="form-group"><label for="company">Company Name <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem">(Required for HR enquiries)</span></label><input type="text" id="company" name="company" placeholder="e.g. ABC Pte Ltd / N/A for students" autocomplete="organization"></div>
+    <div class="form-group"><label for="phone">Phone / WhatsApp <span style="color:var(--rose)">*</span></label><input type="tel" id="phone" name="Phone / WhatsApp" placeholder="+65 9000 0000" autocomplete="tel" required></div>
+    <div class="form-group"><label for="company">Company Name <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem">(Required for HR enquiries)</span></label><input type="text" id="company" name="Company Name" placeholder="e.g. ABC Pte Ltd / N/A for students" autocomplete="organization"></div>
     <div class="form-group">
       <label for="service">I Am Enquiring About <span style="color:var(--rose)">*</span></label>
-      <select id="service" name="service" required>
+      <select id="service" name="Service" required>
         <option value="">Select a service</option>
         <optgroup label="HR Services">
           <option>HR Operations Setup</option>
@@ -1456,13 +1456,13 @@ pre,code{overflow-x:auto;max-width:100%}
         </optgroup>
       </select>
     </div>
-    <div class="form-group"><label for="message">Message <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem">(Optional)</span></label><textarea id="message" name="message" placeholder="Tell us a bit about your situation or what you need help with…"></textarea></div>
+    <div class="form-group"><label for="message">Message <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem">(Optional)</span></label><textarea id="message" name="Message" placeholder="Tell us a bit about your situation or what you need help with…"></textarea></div>
     <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.8rem">Fields marked <span style="color:var(--rose)">*</span> are required.</p>
     <input type="hidden" name="_subject" value="New Enquiry from StarTrust Website">
     <input type="hidden" name="_next" value="">
     <button class="form-btn" id="submitBtn" type="submit">Send Enquiry</button>
     <div id="formSuccess" style="display:none;margin-top:0.8rem;padding:0.9rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;text-align:center;font-family:'Poppins',sans-serif;font-size:0.85rem;color:#15803d;font-weight:600">
-      ✅ Message sent! We'll reply within one business day.
+      ✅ Message sent! We'll reply within 2 business days.
     </div>
     <div id="formError" style="display:none;margin-top:0.8rem;padding:0.9rem;background:#fff5f5;border:1px solid #fecaca;border-radius:10px;text-align:center;font-family:'Poppins',sans-serif;font-size:0.85rem;color:#dc2626;font-weight:600">
       ❌ Something went wrong. Please WhatsApp us directly at +65 9853 0670.
