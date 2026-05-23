@@ -278,7 +278,7 @@ tr:hover td{background:#fafbfc}
         <div class="nav-item" onclick="nav('hrclients')"><span class="ni">🏢</span> HR Clients</div>
         <div class="nav-item" onclick="nav('candidates')"><span class="ni">👤</span> Candidates</div>
         <div class="nav-item" onclick="nav('payroll')" id="nav-payroll"><span class="ni">💰</span> Payroll</div>
-        <div class="nav-item" onclick="nav('leave')" id="nav-leave"><span class="ni">🌴</span> Leave Tracking</div>
+        <div class="nav-item" onclick="nav('leave')" id="nav-leave"><span class="ni">🌴</span> Leave Tracking <span class="nav-badge" id="nb-leave" style="display:none">0</span></div>
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Education</div>
@@ -416,6 +416,11 @@ function nav(page){
 function updateBadges(){
   const newEnq=DB.enquiries.filter(e=>e.status==='New').length;
   document.getElementById('nb-enquiries').textContent=newEnq||'';
+  if(isDirector()){
+    const pendingLeave=DB.leave.filter(l=>l.status==='Pending').length;
+    const leaveBadge=document.getElementById('nb-leave');
+    if(leaveBadge){leaveBadge.textContent=pendingLeave||'';leaveBadge.style.display=pendingLeave?'':'none';}
+  }
 }
 
 // ══════════════════════════════════════
@@ -473,7 +478,7 @@ function renderEnquiries(filter=''){
   </div>
   <div class="tbl-wrap">
     <table>
-      <thead><tr><th>Name</th><th>Contact</th><th>Company</th><th>Service</th><th>Status</th><th>Date</th><th>Follow Up</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Name</th><th>Contact</th><th>Company</th><th>Service</th><th>Status</th><th>Date</th><th>Follow Up</th><th>Assigned To</th><th>Actions</th></tr></thead>
       <tbody id="enqTbody">${renderEnqRows(data)}</tbody>
     </table>
     ${!data.length?`<div class="empty-state"><div class="empty-icon">📭</div><p>No enquiries yet</p></div>`:''}
@@ -489,6 +494,7 @@ function renderEnqRows(data){
     <td><span class="badge ${statusClass(e.status)}">${e.status}</span></td>
     <td style="color:var(--muted);font-size:0.78rem">${e.date||'—'}</td>
     <td style="font-size:0.78rem;color:${e.followup?'var(--rose)':'var(--muted)'}">${e.followup||'—'}</td>
+    <td style="font-size:0.78rem">${e.assignedTo||'—'}</td>
     <td><div class="act-row">
       <button class="act primary" onclick="viewEnquiry(${e.id})">View</button>
       <button class="convert-btn" onclick="convertToProject(${e.id})" title="Convert to Project">→ Project</button>
@@ -537,6 +543,12 @@ function viewEnquiry(id){
           </select>
         </div>
         <div class="detail-item"><label>Follow Up Date</label><input type="date" id="eFollowup" value="${e.followup||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>Assigned To</label>
+          <select id="eAssigned" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            <option value="">— Unassigned —</option>
+            ${[...USERS,...extraUsers].map(u=>`<option ${e.assignedTo===u.name?'selected':''}>${u.name}</option>`).join('')}
+          </select>
+        </div>
         <div class="detail-item detail-full"><label>Notes</label><textarea id="eNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:80px;outline:none">${e.notes||''}</textarea></div>
       </div>
     </div>`,
@@ -549,6 +561,7 @@ function saveEnquiry(id){
   const e=DB.enquiries.find(x=>x.id===id);if(!e)return;
   e.status=document.getElementById('eStatus').value;
   e.followup=document.getElementById('eFollowup').value;
+  e.assignedTo=document.getElementById('eAssigned').value;
   e.notes=document.getElementById('eNotes').value;
   saveDB();updateBadges();closeModal();nav('enquiries');showToast('Enquiry updated!');
 }
@@ -617,22 +630,27 @@ function renderProjects(){
   </div>
   <div class="toolbar">
     <div class="toolbar-title">${data.length} projects</div>
+    <div style="display:flex;gap:0.5rem">
+    <button class="btn-sec" onclick="exportProjects()">📤 Export</button>
     <button class="btn-primary" onclick="openAddProject()">+ Add Project</button>
+    </div>
   </div>
   <div class="tbl-wrap">
     <table>
-      <thead><tr><th>Client</th><th>Company</th><th>Service</th><th>Start Date</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Client</th><th>Company</th><th>Service</th><th>Start</th><th>End</th><th>Status</th><th>Assigned To</th><th>Actions</th></tr></thead>
       <tbody>${data.length?data.map(p=>`<tr>
         <td><div class="td-name">${p.clientName}</div><div class="td-sub">${p.email}</div></td>
         <td style="font-size:0.82rem">${p.company||'—'}</td>
         <td><span class="svc ${isEdu(p.service)?'edu':'hr'}">${p.service||'—'}</span></td>
         <td style="font-size:0.78rem;color:var(--muted)">${p.startDate||'—'}</td>
+        <td style="font-size:0.78rem;color:var(--muted)">${p.endDate||'—'}</td>
         <td><span class="badge ${p.status==='Active'?'b-active':'b-pending'}">${p.status}</span></td>
+        <td style="font-size:0.78rem">${p.assignedTo||'—'}</td>
         <td><div class="act-row">
           <button class="act primary" onclick="viewProject(${p.id})">View</button>
           ${isDirector()?`<button class="act danger" onclick="delProject(${p.id})">🗑</button>`:''}
         </div></td>
-      </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No projects yet</td></tr>'}</tbody>
+      </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">No projects yet</td></tr>'}</tbody>
     </table>
   </div>`;
 }
@@ -650,6 +668,13 @@ function viewProject(id){
         <div class="detail-item"><label>Email</label><p>${p.email}</p></div>
         <div class="detail-item"><label>Phone</label><p>${p.phone||'—'}</p></div>
         <div class="detail-item"><label>Start Date</label><p>${p.startDate||'—'}</p></div>
+        <div class="detail-item"><label>End Date</label><input type="date" id="pEndDate" value="${p.endDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>Assigned To</label>
+          <select id="pAssigned" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            <option value="">— Unassigned —</option>
+            ${[...USERS,...extraUsers].map(u=>`<option ${p.assignedTo===u.name?'selected':''}>${u.name}</option>`).join('')}
+          </select>
+        </div>
         <div class="detail-item"><label>Status</label>
           <select id="pStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
             ${['Active','On Hold','Completed'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}
@@ -675,6 +700,8 @@ function viewProject(id){
 function saveProject(id){
   const p=DB.projects.find(x=>x.id===id);if(!p)return;
   p.status=document.getElementById('pStatus').value;
+  p.endDate=document.getElementById('pEndDate').value;
+  p.assignedTo=document.getElementById('pAssigned').value;
   p.notes=document.getElementById('pNotes').value;
   p.services=Array.from(document.querySelectorAll('.svc-chk:checked')).map(c=>c.value);
   saveDB();closeModal();nav('projects');showToast('Project updated!');
@@ -689,6 +716,13 @@ function openAddProject(){
       <div class="form-group"><label>Phone</label><input id="pp4" placeholder="+65 9xxx xxxx"></div>
       <div class="form-group"><label>Service Type</label><select id="pp5">${svcOptions()}</select></div>
       <div class="form-group"><label>Start Date</label><input id="pp6" type="date" value="${today()}"></div>
+      <div class="form-group"><label>End Date</label><input id="pp7" type="date"></div>
+      <div class="form-group"><label>Assigned To</label>
+        <select id="pp8">
+          <option value="">— Unassigned —</option>
+          ${[...USERS,...extraUsers].map(u=>`<option>${u.name}</option>`).join('')}
+        </select>
+      </div>
     </div>`,
     `<button class="btn-sec" onclick="closeModal()">Cancel</button>
      <button class="btn-primary" onclick="addProject()">Add Project</button>`
@@ -700,7 +734,7 @@ function addProject(){
   if(!f('pp1')||!f('pp3')){showToast('Name and email required!');return;}
   DB.projects.unshift({
     id:DB.nextId.p++,clientName:f('pp1'),company:f('pp2'),email:f('pp3'),
-    phone:f('pp4'),service:f('pp5'),startDate:f('pp6'),status:'Active',services:[f('pp5')],notes:''
+    phone:f('pp4'),service:f('pp5'),startDate:f('pp6'),endDate:f('pp7'),assignedTo:f('pp8'),status:'Active',services:[f('pp5')],notes:''
   });
   saveDB();closeModal();nav('projects');showToast('Project added!');
 }
@@ -755,7 +789,8 @@ function openAddHR(){
       <div class="form-group"><label>Email</label><input id="hr3" type="email"></div>
       <div class="form-group"><label>Phone</label><input id="hr4"></div>
       <div class="form-group"><label>No. of Employees</label><input id="hr5" type="number" placeholder="e.g. 15"></div>
-      <div class="form-group"><label>Client Since</label><input id="hr6" type="date" value="${today()}"></div>
+      <div class="form-group"><label>Contract Start Date</label><input id="hr6" type="date" value="${today()}"></div>
+      <div class="form-group"><label>Contract End Date</label><input id="hr8" type="date"></div>
       <div class="form-group form-full"><label>Services Rendered</label>
         <div class="svc-checks">${hrSvcs.map(s=>`<label class="svc-check"><input type="checkbox" class="hr-svc-chk" value="${s}"> ${s}</label>`).join('')}</div>
       </div>
@@ -772,7 +807,7 @@ function addHR(){
   const svcs=Array.from(document.querySelectorAll('.hr-svc-chk:checked')).map(c=>c.value);
   DB.hrclients.unshift({
     id:DB.nextId.h++,company:f('hr1'),contactName:f('hr2'),email:f('hr3'),
-    phone:f('hr4'),employees:f('hr5'),since:f('hr6'),services:svcs,notes:f('hr7'),status:'Active'
+    phone:f('hr4'),employees:f('hr5'),since:f('hr6'),endDate:f('hr8'),services:svcs,notes:f('hr7'),status:'Active'
   });
   saveDB();closeModal();nav('hrclients');showToast('HR Client added!');
 }
@@ -788,6 +823,7 @@ function viewHR(id){
         <div class="detail-item"><label>Phone</label><p>${h.phone||'—'}</p></div>
         <div class="detail-item"><label>Employees</label><p>${h.employees||'—'}</p></div>
         <div class="detail-item"><label>Client Since</label><p>${h.since||'—'}</p></div>
+        <div class="detail-item"><label>Contract End Date</label><input type="date" id="hEndDate" value="${h.endDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
         <div class="detail-item"><label>Status</label>
           <select id="hStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
             ${['Active','On Hold','Inactive'].map(s=>`<option ${h.status===s?'selected':''}>${s}</option>`).join('')}
@@ -811,6 +847,7 @@ function viewHR(id){
 function saveHR(id){
   const h=DB.hrclients.find(x=>x.id===id);if(!h)return;
   h.status=document.getElementById('hStatus').value;
+  h.endDate=document.getElementById('hEndDate').value;
   h.notes=document.getElementById('hNotes').value;
   saveDB();closeModal();nav('hrclients');showToast('HR Client updated!');
 }
@@ -1021,7 +1058,8 @@ function openAddStudent(){
       <div class="form-group"><label>Nationality *</label><input id="st2" placeholder="e.g. Malaysian"></div>
       <div class="form-group"><label>Email</label><input id="st3" type="email"></div>
       <div class="form-group"><label>Phone / WhatsApp</label><input id="st4"></div>
-      <div class="form-group"><label>Passport No.</label><input id="st5"></div>
+      <div class="form-group"><label>Passport No.</label><input id="st5" placeholder="e.g. A12345678"></div>
+      <div class="form-group"><label>Passport Expiry Date</label><input id="st5b" type="date"></div>
       <div class="form-group"><label>Date of Birth</label><input id="st6" type="date"></div>
       <div class="form-group"><label>School *</label>
         <select id="st7"><option value="">Select school...</option>${schools.map(s=>`<option>${s}</option>`).join('')}<option>Other</option></select>
@@ -1054,7 +1092,7 @@ function addStudent(){
   if(!f('st1')||!f('st2')){showToast('Name and nationality required!');return;}
   DB.students.unshift({
     id:DB.nextId.s++,name:f('st1'),nationality:f('st2'),email:f('st3'),phone:f('st4'),
-    passport:f('st5'),dob:f('st6'),school:f('st7'),course:f('st8'),
+    passport:f('st5'),passportExpiry:f('st5b'),dob:f('st6'),school:f('st7'),course:f('st8'),
     appDate:f('st9'),startDate:f('st10'),stpAppDate:f('st11'),stpApprovalDate:f('st12'),
     stpStatus:f('st13'),schoolPaid:document.getElementById('st14').value==='1',
     paymentDate:f('st15'),commissionAmt:f('st16'),notes:f('st17'),dateAdded:today()
@@ -1065,58 +1103,63 @@ function addStudent(){
 function viewStudent(id){
   const s=DB.students.find(x=>x.id===id);if(!s)return;
   const schools=DB.schools.map(sc=>sc.name);
+  const inp=(fid,val,type='text')=>`<input id="${fid}" type="${type}" value="${val||''}" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none">`;
+  const expiryWarn=(exp)=>{if(!exp)return'';const d=new Date(exp),now=new Date(),days=Math.round((d-now)/(1000*60*60*24));return days<90?`<span style="color:var(--rose);font-size:0.72rem;margin-left:0.4rem">${days<0?'EXPIRED':'Expiring in '+days+'d'} ⚠️</span>`:''};
   openModal('Student — '+s.name,`
-    <div class="detail-section">
-      <h4>Personal Details</h4>
+    <div class="detail-section"><h4>🪪 Personal Details</h4>
       <div class="detail-row">
         <div class="detail-item"><label>Full Name</label><p>${s.name}</p></div>
         <div class="detail-item"><label>Nationality</label><p>${s.nationality}</p></div>
         <div class="detail-item"><label>Email</label><p>${s.email||'—'}</p></div>
         <div class="detail-item"><label>Phone</label><p>${s.phone||'—'}</p></div>
-        <div class="detail-item"><label>Passport No.</label><p>${s.passport||'—'}</p></div>
         <div class="detail-item"><label>Date of Birth</label><p>${s.dob||'—'}</p></div>
+        <div class="detail-item"><label>Passport No.</label><p>${s.passport||'—'}</p></div>
+        <div class="detail-item"><label>Passport Expiry</label><p>${s.passportExpiry||'—'}${expiryWarn(s.passportExpiry)}</p></div>
       </div>
     </div>
-    <div class="detail-section">
-      <h4>School Placement</h4>
+    <div class="detail-section"><h4>🏫 School Placement</h4>
       <div class="detail-row">
         <div class="detail-item"><label>School</label>
-          <select id="sSchool" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+          <select id="sSchool" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none">
             ${schools.map(sc=>`<option ${s.school===sc?'selected':''}>${sc}</option>`).join('')}<option ${!schools.includes(s.school)?'selected':''}>Other</option>
           </select>
         </div>
-        <div class="detail-item"><label>Course</label><input id="sCourse" value="${s.course||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
-        <div class="detail-item"><label>Application Date</label><input id="sAppDate" type="date" value="${s.appDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
-        <div class="detail-item"><label>Course Start Date</label><input id="sStartDate" type="date" value="${s.startDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>Course</label>${inp('sCourse',s.course)}</div>
+        <div class="detail-item"><label>Application Date</label>${inp('sAppDate',s.appDate,'date')}</div>
+        <div class="detail-item"><label>Course Start Date</label>${inp('sStartDate',s.startDate,'date')}</div>
       </div>
     </div>
-    <div class="detail-section">
-      <h4>Student Pass (STP)</h4>
+    <div class="detail-section"><h4>🎫 Student Pass (STP)</h4>
       <div class="detail-row">
-        <div class="detail-item"><label>STP Application Date</label><input id="sStpApp" type="date" value="${s.stpAppDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
-        <div class="detail-item"><label>STP Approval Date</label><input id="sStpApproval" type="date" value="${s.stpApprovalDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>STP Application Date</label>${inp('sStpApp',s.stpAppDate,'date')}</div>
+        <div class="detail-item"><label>STP Approval Date</label>${inp('sStpApproval',s.stpApprovalDate,'date')}</div>
         <div class="detail-item"><label>STP Status</label>
-          <select id="sStpStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+          <select id="sStpStatus" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none">
             ${['Pending','Applied','Approved','Rejected','Not Required'].map(st=>`<option ${s.stpStatus===st?'selected':''}>${st}</option>`).join('')}
           </select>
         </div>
       </div>
     </div>
-    <div class="detail-section">
-      <h4>Commission Payment</h4>
+    <div class="detail-section"><h4>💰 Commission Payment</h4>
       <div class="detail-row">
         <div class="detail-item"><label>School Paid?</label>
-          <select id="sSchoolPaid" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+          <select id="sSchoolPaid" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none">
             <option value="0" ${!s.schoolPaid?'selected':''}>Not Yet</option>
             <option value="1" ${s.schoolPaid?'selected':''}>Yes — Paid</option>
           </select>
         </div>
-        <div class="detail-item"><label>Payment Date</label><input id="sPayDate" type="date" value="${s.paymentDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
-        <d
-        <div class="detail-item"><label>Commission (SGD)</label><input id="sComm" type="number" value="${s.commissionAmt||''}" placeholder="500" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>Payment Date</label>${inp('sPayDate',s.paymentDate,'date')}</div>
+        <div class="detail-item"><label>Commission (SGD)</label>${inp('sComm',s.commissionAmt,'number')}</div>
       </div>
     </div>
-    <div class="detail-section"><h4>Notes</h4><textarea id="sNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:DM Sans,sans-serif;resize:vertical;min-height:80px;outline:none">${s.notes||''}</textarea></div>`,
+    <div class="detail-section"><h4>📎 Attachments</h4>
+      ${renderAttachments('student',id)}
+      <div style="margin-top:0.75rem">
+        <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem">Upload document (PDF/JPG/PNG, max 2MB)</label>
+        <input type="file" id="attFile_student_${id}" accept=".pdf,.jpg,.jpeg,.png" onchange="uploadAttachment('student',${id},this)" style="font-size:0.78rem">
+      </div>
+    </div>
+    <div class="detail-section"><h4>📝 Notes</h4><textarea id="sNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:DM Sans,sans-serif;resize:vertical;min-height:80px;outline:none">${s.notes||''}</textarea></div>`,
     `<button class="btn-sec" onclick="closeModal()">Cancel</button>
      <button class="btn-primary" onclick="saveStudent(${id})">Save Changes</button>`
   );
@@ -1124,13 +1167,12 @@ function viewStudent(id){
 
 function saveStudent(id){
   const s=DB.students.find(x=>x.id===id);if(!s)return;
-  s.school=document.getElementById('sSchool').value;
-  s.course=document.getElementById('sCourse').value;
-  s.stpStatus=document.getElementById('sStpStatus').value;
-  s.schoolPaid=document.getElementById('sSchoolPaid').value==='1';
-  s.paymentDate=document.getElementById('sPayDate').value;
-  s.commissionAmt=document.getElementById('sComm').value;
-  s.notes=document.getElementById('sNotes').value;
+  const g=fid=>{const el=document.getElementById(fid);return el?el.value:'';}
+  s.school=g('sSchool');s.course=g('sCourse');s.stpStatus=g('sStpStatus');
+  s.schoolPaid=g('sSchoolPaid')==='1';s.paymentDate=g('sPayDate');
+  s.commissionAmt=g('sComm');s.appDate=g('sAppDate');s.startDate=g('sStartDate');
+  s.stpAppDate=g('sStpApp');s.stpApprovalDate=g('sStpApproval');
+  s.notes=g('sNotes');
   saveDB();closeModal();nav('students');showToast('Student updated!');
 }
 
@@ -1499,8 +1541,8 @@ function exportSinglePayroll(){
 }
 
 function exportEmployees(){
-  const rows=[['Name','Email','Designation','Mode','Employment Type','Basic','Allowance','SC/PR Children','Notes']];
-  DB.employees.forEach(e=>rows.push([e.name,e.email||'',e.designation||'',e.mode||'Full-Time',e.empType||'',e.basic||0,e.allowance||0,e.kids||0,e.notes||'']));
+  const rows=[['Name','Email','Designation','Mode','Employment Type','Basic','Allowance','SC/PR Children','NRIC','FIN','Work Pass No','WP Expiry','Passport No','Passport Expiry','Start Date','End Date','Notes']];
+  DB.employees.forEach(e=>rows.push([e.name,e.email||'',e.designation||'',e.mode||'Full-Time',e.empType||'',e.basic||0,e.allowance||0,e.kids||0,e.nric||'',e.fin||'',e.wpNo||'',e.wpExpiry||'',e.passport||'',e.passportExpiry||'',e.startDate||'',e.endDate||'',e.notes||'']));
   dlCSV(rows,'employees');
 }
 
@@ -1589,8 +1631,17 @@ function openAddEmployee(){
     </select></div>
     <div class="form-group"><label>Basic Salary (SGD)</label><input id="em5" type="number" value="0"></div>
     <div class="form-group"><label>Monthly Allowance (SGD)</label><input id="em6" type="number" value="0"></div>
-    <div class="form-group"><label>No. of SC/PR Children</label><input id="em7" type="number" value="0" min="0" title="Affects govt-paid leave entitlements"></div>
-    <div class="form-group form-full"><label>Notes</label><textarea id="em8" placeholder="e.g. Part-time, contract end date..."></textarea></div>
+    <div class="form-group"><label>No. of SC/PR Children</label><input id="em7" type="number" value="0" min="0"></div>
+    <div class="form-group"><label>Start Date</label><input id="em10" type="date" value="${today()}"></div>
+    <div class="form-group"><label>End Date (if contract/temp)</label><input id="em11" type="date"></div>
+    <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:0.75rem;font-weight:700;font-size:0.82rem;color:var(--slate)">🪪 Identification Documents</div>
+    <div class="form-group"><label>NRIC No. (SC/PR)</label><input id="em12" placeholder="e.g. S1234567A"></div>
+    <div class="form-group"><label>FIN No. (EP/SP/WP/PR)</label><input id="em13" placeholder="e.g. G1234567X"></div>
+    <div class="form-group"><label>Work Pass No.</label><input id="em14" placeholder="WP/SP/EP number"></div>
+    <div class="form-group"><label>Work Pass Expiry</label><input id="em15" type="date"></div>
+    <div class="form-group"><label>Passport No.</label><input id="em16" placeholder="e.g. A12345678"></div>
+    <div class="form-group"><label>Passport Expiry</label><input id="em17" type="date"></div>
+    <div class="form-group form-full"><label>Notes</label><textarea id="em8" placeholder="e.g. Probation period, contract terms..."></textarea></div>
   </div>`,
   `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="addEmployee()">Add Employee</button>`);
 }
@@ -1599,26 +1650,45 @@ function addEmployee(){
   const f=id=>document.getElementById(id)?.value?.trim()||'';
   if(!f('em1')){showToast('Name required!');return;}
   if(!DB.nextId.em)DB.nextId.em=1;
-  DB.employees.push({id:DB.nextId.em++,name:f('em1'),email:f('em2'),designation:f('em3'),mode:f('em9'),empType:f('em4'),basic:parseFloat(f('em5'))||0,allowance:parseFloat(f('em6'))||0,kids:parseInt(f('em7'))||0,notes:f('em8')});
+  DB.employees.push({id:DB.nextId.em++,name:f('em1'),email:f('em2'),designation:f('em3'),mode:f('em9'),empType:f('em4'),basic:parseFloat(f('em5'))||0,allowance:parseFloat(f('em6'))||0,kids:parseInt(f('em7'))||0,startDate:f('em10'),endDate:f('em11'),nric:f('em12'),fin:f('em13'),wpNo:f('em14'),wpExpiry:f('em15'),passport:f('em16'),passportExpiry:f('em17'),notes:f('em8')});
   saveDB();closeModal();showPayTab('employees');nav('payroll');showToast('Employee added! ✅');
 }
 
 function editEmployee(id){
   const e=DB.employees.find(x=>x.id===id);if(!e)return;
-  openModal('Edit Employee',`<div class="form-grid">
-    <div class="form-group form-full"><label>Full Name *</label><input id="em1" value="${e.name}"></div>
-    <div class="form-group"><label>Email</label><input id="em2" type="email" value="${e.email||''}"></div>
-    <div class="form-group"><label>Designation</label><input id="em3" value="${e.designation||''}"></div>
-    <div class="form-group"><label>Employment Mode</label><select id="em9">
+  const expiryWarn=(exp)=>{if(!exp)return'';const d=new Date(exp),now=new Date(),days=Math.round((d-now)/(1000*60*60*24));return days<90?`<span style="color:var(--rose);font-size:0.72rem;margin-left:0.25rem">${days<0?'EXPIRED':'Expiring '+days+'d'} ⚠️</span>`:''};
+  const inp=(fid,val,type='text',ph='')=>`<input id="${fid}" type="${type}" value="${val||''}" placeholder="${ph}" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none">`;
+  openModal('Edit Employee — '+e.name,`<div class="form-grid">
+    <div class="form-group form-full"><label>Full Name *</label>${inp('em1',e.name,'text','Sarah Tan')}</div>
+    <div class="form-group"><label>Email</label>${inp('em2',e.email,'email')}</div>
+    <div class="form-group"><label>Designation</label>${inp('em3',e.designation,'text','HR Executive')}</div>
+    <div class="form-group"><label>Employment Mode</label><select id="em9" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none">
       ${['Full-Time','Part-Time','Contract','Freelance','Hourly Rate'].map(m=>`<option ${(e.mode||'Full-Time')===m?'selected':''}>${m}</option>`).join('')}
     </select></div>
-    <div class="form-group"><label>Employment Type</label><select id="em4">
+    <div class="form-group"><label>Employment Type</label><select id="em4" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none">
       ${['sc','pr1','pr2','pr3','ep','sp','wp'].map(v=>`<option value="${v}" ${e.empType===v?'selected':''}>${{sc:'Singapore Citizen',pr1:'PR 1st Year',pr2:'PR 2nd Year',pr3:'PR 3rd Year+',ep:'Employment Pass',sp:'S Pass',wp:'Work Permit'}[v]}</option>`).join('')}
     </select></div>
-    <div class="form-group"><label>Basic Salary (SGD)</label><input id="em5" type="number" value="${e.basic||0}"></div>
-    <div class="form-group"><label>Monthly Allowance (SGD)</label><input id="em6" type="number" value="${e.allowance||0}"></div>
-    <div class="form-group"><label>No. of SC/PR Children</label><input id="em7" type="number" value="${e.kids||0}" min="0"></div>
-    <div class="form-group form-full"><label>Notes</label><textarea id="em8">${e.notes||''}</textarea></div>
+    <div class="form-group"><label>Basic Salary (SGD)</label>${inp('em5',e.basic,'number')}</div>
+    <div class="form-group"><label>Monthly Allowance (SGD)</label>${inp('em6',e.allowance,'number')}</div>
+    <div class="form-group"><label>No. of SC/PR Children</label>${inp('em7',e.kids,'number')}</div>
+    <div class="form-group"><label>Start Date</label>${inp('em10',e.startDate,'date')}</div>
+    <div class="form-group"><label>End Date</label>${inp('em11',e.endDate,'date')}</div>
+    <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:0.75rem;font-weight:700;font-size:0.82rem;color:var(--slate)">🪪 Identification Documents</div>
+    <div class="form-group"><label>NRIC No. (SC/PR)</label>${inp('em12',e.nric,'text','S1234567A')}</div>
+    <div class="form-group"><label>FIN No. (EP/SP/WP/PR)</label>${inp('em13',e.fin,'text','G1234567X')}</div>
+    <div class="form-group"><label>Work Pass No.</label>${inp('em14',e.wpNo,'text','WP/SP/EP number')}</div>
+    <div class="form-group"><label>Work Pass Expiry ${expiryWarn(e.wpExpiry)}</label>${inp('em15',e.wpExpiry,'date')}</div>
+    <div class="form-group"><label>Passport No.</label>${inp('em16',e.passport,'text','A12345678')}</div>
+    <div class="form-group"><label>Passport Expiry ${expiryWarn(e.passportExpiry)}</label>${inp('em17',e.passportExpiry,'date')}</div>
+    <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:0.75rem;font-weight:700;font-size:0.82rem;color:var(--slate)">📎 Attachments</div>
+    <div style="grid-column:1/-1">
+      ${renderAttachments('employee',id)}
+      <div style="margin-top:0.75rem">
+        <label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem">Upload document (PDF/JPG/PNG, max 2MB)</label>
+        <input type="file" id="attFile_employee_${id}" accept=".pdf,.jpg,.jpeg,.png" onchange="uploadAttachment('employee',${id},this)" style="font-size:0.78rem">
+      </div>
+    </div>
+    <div class="form-group form-full"><label>Notes</label><textarea id="em8" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem;font-size:0.82rem;font-family:DM Sans,sans-serif;resize:vertical;min-height:60px;outline:none">${e.notes||''}</textarea></div>
   </div>`,
   `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="saveEmployee(${id})">Save</button>`);
 }
@@ -1627,7 +1697,10 @@ function saveEmployee(id){
   const e=DB.employees.find(x=>x.id===id);if(!e)return;
   const f=fid=>document.getElementById(fid)?.value?.trim()||'';
   e.name=f('em1');e.email=f('em2');e.designation=f('em3');e.mode=f('em9');e.empType=f('em4');
-  e.basic=parseFloat(f('em5'))||0;e.allowance=parseFloat(f('em6'))||0;e.kids=parseInt(f('em7'))||0;e.notes=f('em8');
+  e.basic=parseFloat(f('em5'))||0;e.allowance=parseFloat(f('em6'))||0;e.kids=parseInt(f('em7'))||0;
+  e.startDate=f('em10');e.endDate=f('em11');
+  e.nric=f('em12');e.fin=f('em13');e.wpNo=f('em14');e.wpExpiry=f('em15');
+  e.passport=f('em16');e.passportExpiry=f('em17');e.notes=f('em8');
   saveDB();closeModal();nav('payroll');showToast('Employee updated! ✅');
 }
 
@@ -1743,6 +1816,11 @@ function delUser(username){
   nav('users');showToast('Removed!');
 }
 
+function exportProjects(){
+  const rows=[['Client','Company','Email','Phone','Service','Start Date','End Date','Status','Assigned To','Notes']];
+  DB.projects.forEach(p=>rows.push([p.clientName,p.company||'',p.email,p.phone||'',p.service||'',p.startDate||'',p.endDate||'',p.status,p.assignedTo||'',p.notes||'']));
+  dlCSV(rows,'projects');
+}
 function exportHRClients(){
   const rows=[['Company','Contact Person','Email','Phone','Employees','Services','Status','Notes']];
   DB.hrclients.forEach(h=>rows.push([h.company||'',h.contact||'',h.email||'',h.phone||'',h.employees||'',h.services||'',h.status||'',h.notes||'']));
@@ -1771,7 +1849,7 @@ function renderLeave(){
   const data=DB.leave;
   const pending=data.filter(l=>l.status==='Pending').length;
   return `<div class="page-header"><div class="page-title">🌴 Leave Tracking</div><div class="page-sub">Singapore MOM-compliant — Annual, Medical, Maternity, Paternity & more</div></div>
-  <div class="toolbar"><div class="toolbar-title">${data.length} records${pending?` · <span style="color:var(--rose)">${pending} pending</span>`:''}
+  <div class="toolbar"><div class="toolbar-title">${data.length} records${pending?` · <span style="color:var(--rose);font-weight:700">${pending} pending approval ⏳</span>`:''}
   </div><div style="display:flex;gap:0.5rem">
   <button class="btn-sec" onclick="exportLeave()">📤 Export</button>
   <button class="btn-primary" onclick="openAddLeave()">+ Apply Leave</button></div></div>
@@ -1804,32 +1882,33 @@ function renderLeave(){
   </div>`;
 }
 function openAddLeave(){
-  openModal('Apply Leave',`<div class="form-grid">
-    <div class="form-group form-full"><label>Employee Name *</label><input id="lv1" placeholder="e.g. Sarah Tan"></div>
+  const empName=currentUser?.name||'';
+  openModal('Apply for Leave',`<div class="form-grid">
+    <div class="form-group form-full"><label>Employee Name *</label><input id="lv1" value="${empName}" placeholder="e.g. Sarah Tan"></div>
     <div class="form-group"><label>Leave Type *</label><select id="lv2">
       <option>Annual</option><option>Medical</option><option>Maternity</option><option>Paternity</option>
       <option>Childcare</option><option>NS (In-Camp Training)</option><option>Compassionate</option><option>No Pay Leave (NPL)</option><option>Other</option>
     </select>
-    <div id="customLeaveTypeWrap" style="display:none;margin-top:0.5rem">
-      <label style="font-size:0.78rem;color:var(--muted)">Custom leave types (Director)</label>
-      <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+    ${isDirector()?`<div id="customLeaveTypeWrap" style="margin-top:0.5rem">
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.25rem">➕ Add custom leave type (Director only)</div>
+      <div style="display:flex;gap:0.5rem">
         <input id="newLeaveTypeName" placeholder="e.g. Birthday Leave" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.65rem;font-size:0.82rem">
         <button class="btn-primary" onclick="addCustomLeaveType()" style="padding:0.4rem 0.75rem;font-size:0.78rem">+ Add</button>
       </div>
       <div id="customLeaveTypeList" style="margin-top:0.5rem;font-size:0.78rem;color:var(--muted)"></div>
+    </div>`:''}
     </div>
-    </select></div>
-    <div class="form-group"><label>Status</label><select id="lv5">
-      <option>Pending</option><option>Approved</option><option>Rejected</option>
-    </select></div>
     <div class="form-group"><label>Start Date *</label><input id="lv3" type="date"></div>
     <div class="form-group"><label>End Date *</label><input id="lv4" type="date" onchange="calcLeaveDays()"></div>
     <div class="form-group"><label>No. of Days</label><input id="lv6" type="number" min="0.5" step="0.5" placeholder="Auto-calculated"></div>
-    <div class="form-group"><label>Approved By</label><input id="lv7" placeholder="e.g. Chloe Lu"></div>
-    <div class="form-group form-full"><label>Notes</label><textarea id="lv8" placeholder="Medical cert ref, reason, etc."></textarea></div>
+    <div class="form-group"><label>Approved By</label><input id="lv7" value="${isDirector()?currentUser?.name:''}" placeholder="${isDirector()?'':'Pending director approval'}"></div>
+    <div class="form-group form-full"><label>Notes / Reason</label><textarea id="lv8" placeholder="Medical cert ref, reason, etc."></textarea></div>
+    <div class="form-group form-full" style="background:rgba(232,86,122,0.05);border:1px solid rgba(232,86,122,0.2);border-radius:8px;padding:0.75rem;font-size:0.78rem;color:var(--muted)">
+      ${isDirector()?'✅ As Director, you can approve this leave directly.':'⏳ Your leave application will be submitted as <strong>Pending</strong> and the Director will be notified to approve.'}
+    </div>
   </div>`,
-  `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="addLeave()">Add Record</button>`);
-  setTimeout(initLeaveModal,50);
+  `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="addLeave()">Submit Application</button>`);
+  setTimeout(()=>{if(isDirector())renderCustomLeaveList();},50);
 }
 function calcLeaveDays(){
   const s=document.getElementById('lv3')?.value,e=document.getElementById('lv4')?.value;
@@ -1839,17 +1918,21 @@ function addLeave(){
   const f=id=>document.getElementById(id)?.value?.trim()||'';
   if(!f('lv1')||!f('lv3')||!f('lv4')){showToast('Employee, start & end date required!');return;}
   if(!DB.nextId.l)DB.nextId.l=1;
-  DB.leave.unshift({id:DB.nextId.l++,employee:f('lv1'),type:f('lv2'),start:f('lv3'),end:f('lv4'),days:f('lv6'),status:f('lv5'),approvedBy:f('lv7'),notes:f('lv8'),date:new Date().toISOString().split('T')[0]});
-  saveDB();closeModal();nav('leave');showToast('Leave record added! 🌴');
+  const status=isDirector()?'Approved':'Pending';
+  const approvedBy=isDirector()?f('lv7'):'';
+  DB.leave.unshift({id:DB.nextId.l++,employee:f('lv1'),type:f('lv2'),start:f('lv3'),end:f('lv4'),days:f('lv6'),status,approvedBy,notes:f('lv8'),date:new Date().toISOString().split('T')[0],submittedBy:currentUser?.name||''});
+  saveDB();closeModal();nav('leave');
+  if(isDirector()){showToast('Leave approved! ✅');}
+  else{showToast('Leave submitted — pending director approval ⏳');}
 }
 function approveLeave(id){
   const l=DB.leave.find(x=>x.id===id);if(!l)return;
   l.status='Approved';l.approvedBy=currentUser?.name||'Director';
-  saveDB();nav('leave');showToast('Leave approved! ✅');
+  saveDB();updateBadges();nav('leave');showToast('Leave approved! ✅');
 }
 function rejectLeave(id){
   const l=DB.leave.find(x=>x.id===id);if(!l)return;
-  l.status='Rejected';saveDB();nav('leave');showToast('Leave rejected!');
+  l.status='Rejected';saveDB();updateBadges();nav('leave');showToast('Leave rejected!');
 }
 function viewLeave(id){
   const l=DB.leave.find(x=>x.id===id);if(!l)return;
@@ -1869,6 +1952,52 @@ function delLeave(id){
   DB.leave=DB.leave.filter(l=>l.id!==id);
   saveDB();nav('leave');showToast('Deleted!');
 }
+// ══════════════════════════════════════
+// ATTACHMENTS (base64, stored in localStorage)
+// ══════════════════════════════════════
+function attKey(type,id){return `st_att_${type}_${id}`;}
+function getAttachments(type,id){try{return JSON.parse(localStorage.getItem(attKey(type,id))||'[]');}catch(e){return[];}}
+function saveAttachments(type,id,atts){try{localStorage.setItem(attKey(type,id),JSON.stringify(atts));}catch(e){showToast('Storage full — file too large!');}}
+function renderAttachments(type,id){
+  const atts=getAttachments(type,id);
+  if(!atts.length)return'<div style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0">No attachments yet.</div>';
+  return`<div style="display:flex;flex-direction:column;gap:0.4rem">${atts.map((a,i)=>`
+    <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.75rem;font-size:0.78rem">
+      <span>${a.mime.includes('pdf')?'📄':'🖼️'}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</span>
+      <span style="color:var(--muted);font-size:0.7rem">${a.size}</span>
+      <a href="${a.data}" download="${a.name}" style="color:var(--indigo);text-decoration:none;font-size:0.75rem">⬇ Download</a>
+      ${a.mime.startsWith('image/')?`<a href="${a.data}" target="_blank" style="color:var(--indigo);text-decoration:none;font-size:0.75rem">👁 View</a>`:''}
+      <span onclick="deleteAttachment('${type}',${id},${i})" style="cursor:pointer;color:var(--rose);font-size:0.75rem">✕</span>
+    </div>`).join('')}</div>`;
+}
+function uploadAttachment(type,id,input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>2*1024*1024){showToast('File too large — max 2MB!');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const atts=getAttachments(type,id);
+    atts.push({name:file.name,mime:file.type,size:formatBytes(file.size),data:ev.target.result,uploaded:today()});
+    saveAttachments(type,id,atts);
+    // Refresh attachment list in modal without closing
+    const container=input.parentElement?.parentElement;
+    if(container){container.innerHTML=`${renderAttachments(type,id)}<div style="margin-top:0.75rem"><label style="font-size:0.78rem;color:var(--muted);display:block;margin-bottom:0.3rem">Upload document (PDF/JPG/PNG, max 2MB)</label><input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="uploadAttachment('${type}',${id},this)" style="font-size:0.78rem"></div>`;}
+    showToast(`"${file.name}" uploaded! 📎`);
+  };
+  reader.readAsDataURL(file);
+}
+function deleteAttachment(type,id,idx){
+  if(!confirm('Delete this attachment?'))return;
+  const atts=getAttachments(type,id);
+  atts.splice(idx,1);
+  saveAttachments(type,id,atts);
+  // Re-open to refresh
+  if(type==='employee')editEmployee(id);
+  else if(type==='student')viewStudent(id);
+  showToast('Attachment deleted!');
+}
+function formatBytes(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
+
 function addCustomLeaveType(){
   const name=document.getElementById('newLeaveTypeName')?.value?.trim();
   if(!name){showToast('Enter a leave type name!');return;}
