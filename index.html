@@ -1775,6 +1775,14 @@ document.getElementById('contactForm').addEventListener('submit',async function(
     });
     if(resp.ok){
       successEl.style.display='block';
+      // Save to CRM localStorage so crm.html can pick it up
+      try{
+        const fd=new FormData(document.getElementById('contactForm'));
+        const entry={id:Date.now(),fname:fd.get('fname')||'',lname:fd.get('lname')||'',email:fd.get('email')||'',phone:fd.get('phone')||'',company:fd.get('company')||'',service:fd.get('service')||'General',message:fd.get('message')||'',status:'New',followup:'',notes:'',date:new Date().toISOString().split('T')[0]};
+        const existing=JSON.parse(localStorage.getItem('st_web_enquiries')||'[]');
+        existing.unshift(entry);
+        localStorage.setItem('st_web_enquiries',JSON.stringify(existing));
+      }catch(ex){}
       this.reset();
       btn.textContent='Send Enquiry';btn.disabled=false;btn.style.opacity='';
     } else {
@@ -2046,7 +2054,7 @@ async function sendAI(){
   /* Everything else → Claude AI via Netlify Function */
   addTyping();
   try{
-    const res=await fetch('/.netlify/functions/chat',{
+    const res=await fetch('https://startrust-ai.startrust-consultancy.workers.dev',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({messages:chatHistory,system:SYSTEM_PROMPT})

@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StarTrust CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rose:#e8567a;--rose-deep:#c93d63;--indigo:#4f46e5;--navy:#0f172a;
+  --slate:#1e293b;--mid:#475569;--muted:#94a3b8;--border:#e2e8f0;
+  --bg:#f8fafc;--white:#ffffff;--green:#10b981;--amber:#f59e0b;--red:#ef4444;
+  --purple:#7c3aed;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--slate);min-height:100vh;font-size:14px}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#1a0a2e 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-card{background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:3rem;width:380px;text-align:center}
+.login-logo{font-family:'DM Serif Display',serif;font-size:2.2rem;color:white;margin-bottom:0.3rem}
+.login-logo span{color:var(--rose)}
+.login-sub{color:rgba(255,255,255,0.4);font-size:0.8rem;margin-bottom:2rem;letter-spacing:0.1em;text-transform:uppercase}
+.login-label{display:block;text-align:left;font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.4rem}
+.login-input{width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:0.85rem 1rem;color:white;font-size:0.9rem;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:1rem;transition:border 0.2s}
+.login-input:focus{border-color:var(--rose)}
+.login-btn{width:100%;background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:white;border:none;border-radius:10px;padding:0.9rem;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.02em;transition:opacity 0.2s}
+.login-btn:hover{opacity:0.9}
+.login-error{color:#fca5a5;font-size:0.78rem;margin-top:-0.5rem;margin-bottom:0.8rem;display:none}
+.login-role{display:inline-block;margin-top:1.2rem;font-size:0.7rem;color:rgba(255,255,255,0.3);letter-spacing:0.05em}
+
+/* ── APP SHELL ── */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--navy);padding:0 1.5rem;height:56px;display:flex;align-items:center;gap:1rem;border-bottom:1px solid rgba(255,255,255,0.06);position:sticky;top:0;z-index:100}
+.topbar-logo{font-family:'DM Serif Display',serif;font-size:1.15rem;color:white;display:flex;align-items:center;gap:0.5rem}
+.topbar-logo span{color:var(--rose)}
+.topbar-divider{width:1px;height:20px;background:rgba(255,255,255,0.1)}
+.topbar-module{color:rgba(255,255,255,0.5);font-size:0.82rem;font-weight:500}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:1rem}
+.topbar-user{display:flex;align-items:center;gap:0.6rem}
+.topbar-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--indigo));display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:white}
+.topbar-name{color:rgba(255,255,255,0.7);font-size:0.8rem}
+.topbar-role-badge{background:rgba(232,86,122,0.2);border:1px solid rgba(232,86,122,0.3);color:var(--rose);font-size:0.6rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:100px;letter-spacing:0.06em;text-transform:uppercase}
+.logout-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:0.35rem 0.75rem;font-size:0.75rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+.logout-btn:hover{background:rgba(255,255,255,0.1);color:white}
+
+/* ── LAYOUT ── */
+.app-body{display:flex;flex:1}
+.sidebar{width:210px;background:var(--white);border-right:1px solid var(--border);padding:1.2rem 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.main{flex:1;padding:1.8rem 2rem;overflow-x:hidden;min-width:0}
+
+/* ── SIDEBAR ── */
+.nav-section{margin-bottom:1.2rem}
+.nav-section-label{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);padding:0 1rem;margin-bottom:0.4rem}
+.nav-item{display:flex;align-items:center;gap:0.65rem;padding:0.6rem 1rem;cursor:pointer;font-size:0.82rem;font-weight:500;color:var(--mid);transition:all 0.15s;border-left:2px solid transparent;margin:0 0.4rem;border-radius:8px}
+.nav-item:hover{background:var(--bg);color:var(--slate)}
+.nav-item.active{background:linear-gradient(135deg,rgba(232,86,122,0.08),rgba(79,70,229,0.08));color:var(--indigo);font-weight:600;border-left-color:var(--rose)}
+.nav-item .ni{font-size:1rem;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--rose);color:white;font-size:0.58rem;font-weight:700;padding:0.12rem 0.4rem;border-radius:100px;min-width:18px;text-align:center}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:1.5rem}
+.page-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--slate);display:flex;align-items:center;gap:0.6rem}
+.page-sub{color:var(--muted);font-size:0.8rem;margin-top:0.25rem}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat{background:var(--white);border-radius:14px;padding:1.2rem 1.4rem;border:1px solid var(--border);position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:0.08}
+.stat.s1::before{background:var(--indigo)}
+.stat.s2::before{background:var(--rose)}
+.stat.s3::before{background:var(--green)}
+.stat.s4::before{background:var(--amber)}
+.stat-val{font-family:'DM Serif Display',serif;font-size:2rem;font-weight:400;color:var(--slate);line-height:1}
+.stat-lbl{font-size:0.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:0.4rem}
+.stat-sub{font-size:0.72rem;color:var(--muted);margin-top:0.2rem}
+.stat.s1 .stat-val{color:var(--indigo)}
+.stat.s2 .stat-val{color:var(--rose)}
+.stat.s3 .stat-val{color:var(--green)}
+.stat.s4 .stat-val{color:var(--amber)}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:0.7rem;margin-bottom:1.2rem;flex-wrap:wrap}
+.toolbar-title{font-weight:700;font-size:0.95rem;color:var(--slate);margin-right:auto}
+.search-wrap{display:flex;align-items:center;gap:0.5rem;background:var(--white);border:1px solid var(--border);border-radius:9px;padding:0.5rem 0.85rem}
+.search-wrap input{border:none;outline:none;background:transparent;font-size:0.82rem;color:var(--slate);width:180px;font-family:'DM Sans',sans-serif}
+.chip{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.85rem;font-size:0.78rem;font-weight:500;color:var(--mid);cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif}
+.chip:hover,.chip.on{border-color:var(--indigo);color:var(--indigo);background:#f0f0ff}
+.btn-primary{background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:white;border:none;border-radius:9px;padding:0.5rem 1.1rem;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:0.4rem;transition:opacity 0.2s}
+.btn-primary:hover{opacity:0.88}
+.btn-sec{background:var(--white);border:1px solid var(--border);border-radius:9px;padding:0.5rem 1rem;font-size:0.8rem;font-weight:600;color:var(--mid);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.btn-sec:hover{border-color:var(--indigo);color:var(--indigo)}
+
+/* ── TABLE ── */
+.tbl-wrap{background:var(--white);border-radius:14px;border:1px solid var(--border);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--bg)}
+th{padding:0.7rem 1rem;text-align:left;font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:0.85rem 1rem;font-size:0.82rem;color:var(--mid);border-bottom:1px solid #f8fafc;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfc}
+.td-name{font-weight:600;color:var(--slate)}
+.td-sub{font-size:0.72rem;color:var(--muted);margin-top:2px}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:0.25rem;padding:0.22rem 0.6rem;border-radius:100px;font-size:0.66rem;font-weight:700;white-space:nowrap}
+.badge::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
+.b-new{background:#eff6ff;color:#2563eb}
+.b-contacted{background:#fef3c7;color:#d97706}
+.b-proposal{background:#f3e8ff;color:#7c3aed}
+.b-won{background:#dcfce7;color:#16a34a}
+.b-lost{background:#fef2f2;color:#dc2626}
+.b-active{background:#dcfce7;color:#16a34a}
+.b-pending{background:#fef3c7;color:#d97706}
+.b-enrolled{background:#e0f2fe;color:#0369a1}
+.b-rejected{background:#fef2f2;color:#dc2626}
+.b-applied{background:#f3e8ff;color:#7c3aed}
+.b-approved{background:#dcfce7;color:#16a34a}
+.svc{background:#f1f5f9;color:#475569;padding:0.18rem 0.55rem;border-radius:6px;font-size:0.65rem;font-weight:600}
+.svc.hr{background:#ede9fe;color:#5b21b6}
+.svc.edu{background:#fce7f3;color:#be185d}
+
+/* ── ACTIONS ── */
+.act-row{display:flex;gap:0.35rem}
+.act{background:transparent;border:1px solid var(--border);border-radius:6px;padding:0.28rem 0.6rem;font-size:0.7rem;cursor:pointer;color:var(--mid);transition:all 0.15s;font-family:'DM Sans',sans-serif}
+.act:hover{border-color:var(--indigo);color:var(--indigo)}
+.act.danger:hover{border-color:var(--red);color:var(--red)}
+.act.primary{border-color:var(--rose);color:var(--rose)}
+.act.primary:hover{background:#fff0f4}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:1rem}
+.overlay.open{display:flex}
+.modal{background:var(--white);border-radius:18px;width:600px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.2)}
+.modal-head{padding:1.5rem 1.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1}
+.modal-head h3{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--slate)}
+.modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);line-height:1;transition:color 0.15s}
+.modal-close:hover{color:var(--red)}
+.modal-body{padding:1.5rem 1.8rem}
+.modal-foot{padding:1rem 1.8rem;border-top:1px solid var(--border);display:flex;gap:0.7rem;justify-content:flex-end;position:sticky;bottom:0;background:white}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-full{grid-column:1/-1}
+.form-group label{display:block;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border);border-radius:9px;padding:0.65rem 0.9rem;font-size:0.84rem;font-family:'DM Sans',sans-serif;color:var(--slate);outline:none;transition:border 0.2s;background:white}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--indigo)}
+.form-group textarea{resize:vertical;min-height:80px}
+.detail-section{margin-bottom:1.2rem}
+.detail-section h4{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.8rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+.detail-row{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.6rem}
+.detail-item label{display:block;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:0.25rem}
+.detail-item p{font-size:0.84rem;color:var(--slate);font-weight:500;line-height:1.5}
+.detail-full{grid-column:1/-1}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--muted)}
+.empty-icon{font-size:3rem;margin-bottom:0.8rem}
+.empty-state p{font-size:0.85rem;margin-top:0.3rem}
+
+/* ── FILE UPLOAD ── */
+.file-drop{border:2px dashed var(--border);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg)}
+.file-drop:hover,.file-drop.drag{border-color:var(--indigo);background:#f0f0ff}
+.file-drop p{font-size:0.8rem;color:var(--muted);margin-top:0.4rem}
+.file-list{margin-top:0.8rem;display:flex;flex-direction:column;gap:0.4rem}
+.file-item{display:flex;align-items:center;gap:0.6rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.78rem}
+.file-item a{color:var(--indigo);text-decoration:none;font-weight:500;flex:1}
+.file-item a:hover{text-decoration:underline}
+.file-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;transition:color 0.15s}
+.file-del:hover{color:var(--red)}
+
+/* ── TABS ── */
+.tab-bar{display:flex;gap:0.3rem;background:var(--bg);border-radius:10px;padding:0.3rem;margin-bottom:1.2rem;border:1px solid var(--border)}
+.tab{padding:0.5rem 1rem;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all 0.15s;border:none;background:transparent;font-family:'DM Sans',sans-serif}
+.tab.on{background:var(--white);color:var(--slate);box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+
+/* ── CONVERT BTN ── */
+.convert-btn{background:linear-gradient(135deg,var(--green),#059669);color:white;border:none;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.2s}
+.convert-btn:hover{opacity:0.88}
+
+/* ── CHECKBOX ROW ── */
+.svc-checks{display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:0.4rem}
+.svc-check{display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:var(--mid);cursor:pointer}
+.svc-check input{accent-color:var(--indigo)}
+
+/* ── PAYROLL ── */
+.pay-section{background:var(--white);border-radius:14px;border:1px solid var(--border);padding:1.4rem;margin-bottom:1rem}
+.pay-section h3{font-weight:700;font-size:0.88rem;color:var(--slate);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.pay-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:0.8rem}
+.pay-field label{display:block;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:0.3rem}
+.pay-field input,.pay-field select{width:100%;border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.85rem;font-size:0.84rem;font-family:'DM Sans',sans-serif;color:var(--slate);outline:none;transition:border 0.2s}
+.pay-field input:focus,.pay-field select:focus{border-color:var(--indigo)}
+.pay-result{background:linear-gradient(135deg,var(--navy),#1e1b4b);border-radius:12px;padding:1.2rem 1.4rem;color:white;margin-top:1rem}
+.pay-result-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.07);font-size:0.82rem}
+.pay-result-row:last-child{border-bottom:none;padding-top:0.7rem;font-weight:700;font-size:0.95rem}
+.pay-result-row span:first-child{color:rgba(255,255,255,0.6)}
+.pay-result-row span:last-child{color:white}
+.pay-result-row.total span:last-child{color:var(--rose);font-size:1.1rem}
+.payslip-btn{background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:white;border:none;border-radius:9px;padding:0.7rem 1.3rem;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:1rem;width:100%}
+
+/* ── USER MGMT ── */
+.user-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;display:flex;align-items:center;gap:1rem;margin-bottom:0.7rem}
+.user-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--indigo));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:0.85rem;flex-shrink:0}
+.user-info{flex:1}
+.user-name{font-weight:600;color:var(--slate);font-size:0.88rem}
+.user-email{font-size:0.75rem;color:var(--muted);margin-top:1px}
+.user-role-badge{font-size:0.65rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:100px;text-transform:uppercase;letter-spacing:0.06em}
+.role-director{background:rgba(232,86,122,0.1);color:var(--rose);border:1px solid rgba(232,86,122,0.2)}
+.role-admin{background:rgba(79,70,229,0.1);color:var(--indigo);border:1px solid rgba(79,70,229,0.2)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--slate);color:white;padding:0.8rem 1.2rem;border-radius:10px;font-size:0.82rem;font-weight:500;z-index:9999;display:none;align-items:center;gap:0.5rem;box-shadow:0 4px 20px rgba(0,0,0,0.2);animation:slideUp 0.3s ease}
+.toast.show{display:flex}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .main{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">Star<span>Trust</span></div>
+    <div class="login-sub">CRM · Internal Portal</div>
+    <div style="text-align:left">
+      <label class="login-label">Username</label>
+      <input class="login-input" id="loginUser" type="text" placeholder="Enter username" autocomplete="username">
+      <label class="login-label">Password</label>
+      <input class="login-input" id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="login-error" id="loginErr">Invalid username or password</div>
+      <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    </div>
+    <div class="login-role">StarTrust Consultancy · Authorised Access Only</div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app" style="display:none;flex-direction:column;min-height:100vh">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-logo">S<span>★</span>T CRM</div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-module" id="topModule">Dashboard</div>
+    <div class="topbar-right">
+      <div class="topbar-user">
+        <div class="topbar-avatar" id="topAvatar">CL</div>
+        <div>
+          <div class="topbar-name" id="topName">Chloe Lu</div>
+          <div class="topbar-role-badge" id="topRole">Director</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="nav-section">
+        <div class="nav-section-label">Overview</div>
+        <div class="nav-item active" onclick="nav('dashboard')"><span class="ni">📊</span> Dashboard</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Clients</div>
+        <div class="nav-item" onclick="nav('enquiries')"><span class="ni">📋</span> Enquiries <span class="nav-badge" id="nb-enquiries">0</span></div>
+        <div class="nav-item" onclick="nav('projects')"><span class="ni">🏆</span> Projects</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">HR</div>
+        <div class="nav-item" onclick="nav('hrclients')"><span class="ni">🏢</span> HR Clients</div>
+        <div class="nav-item" onclick="nav('candidates')"><span class="ni">👤</span> Candidates</div>
+        <div class="nav-item" onclick="nav('payroll')" id="nav-payroll"><span class="ni">💰</span> Payroll</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Education</div>
+        <div class="nav-item" onclick="nav('students')"><span class="ni">🎓</span> Students</div>
+        <div class="nav-item" onclick="nav('schools')"><span class="ni">🏫</span> School Partners</div>
+      </div>
+      <div class="nav-section" id="nav-admin-section">
+        <div class="nav-section-label">Admin</div>
+        <div class="nav-item" onclick="nav('users')"><span class="ni">👥</span> Users</div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main" id="mainContent"></div>
+  </div>
+</div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+<div class="overlay" id="modalOverlay">
+  <div class="modal" id="modalBox">
+    <div class="modal-head">
+      <h3 id="modalTitle">Modal</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ <span id="toastMsg">Saved!</span></div>
+
+<script>
+// ══════════════════════════════════════
+// DATA & AUTH
+// ══════════════════════════════════════
+const USERS = [
+  {username:'chloe913',password:'Lulu@1995',name:'Chloe Lu',role:'Director',initials:'CL',email:'admin@startrust-consultancy.com'}
+];
+// Admin users added via User Management
+let extraUsers = JSON.parse(localStorage.getItem('st_users')||'[]');
+let currentUser = null;
+
+const KEY = 'st_crm_v2';
+let DB = {
+  enquiries:[],projects:[],hrclients:[],candidates:[],students:[],schools:[
+    {id:1,name:'TMC Academy',type:'Private',courses:'Business, IT, Psychology',contact:'admin@tmc.edu.sg',phone:'+65 6123 4567',status:'Active',commissionRate:'15%',notes:'Jan/Apr/Jul/Oct intakes'},
+    {id:2,name:'PSB Academy',type:'Private',courses:'Business, Engineering',contact:'admin@psb.edu.sg',phone:'+65 6234 5678',status:'Active',commissionRate:'12%',notes:'Multiple university pathways'},
+    {id:3,name:'MDIS',type:'Private',courses:'Business, Nursing, Fashion',contact:'admin@mdis.edu.sg',phone:'+65 6345 6789',status:'Active',commissionRate:'13%',notes:'Degree programmes available'},
+    {id:4,name:'Kaplan Singapore',type:'Private',courses:'CPA, Business, IT',contact:'admin@kaplan.edu.sg',phone:'+65 6456 7890',status:'Active',commissionRate:'14%',notes:'CPA pathways'},
+    {id:5,name:'James Cook University SG',type:'University',courses:'Business, Psychology, IT',contact:'admin@jcu.edu.sg',phone:'+65 6567 8901',status:'Active',commissionRate:'10%',notes:'Full Australian degree'},
+    {id:6,name:'EASB',type:'Private',courses:'Hospitality, Travel, Business',contact:'admin@easb.edu.sg',phone:'+65 6678 9012',status:'Active',commissionRate:'12%',notes:'Tourism focused'}
+  ],
+  nextId:{e:1,p:1,h:1,c:1,s:1}
+};
+
+function loadDB(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);DB={...DB,...d};}}catch(e){}}
+function saveDB(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+loadDB();
+
+// ── Pull in enquiries submitted from the website contact form ──
+function syncWebEnquiries(){
+  try{
+    const web=JSON.parse(localStorage.getItem('st_web_enquiries')||'[]');
+    const synced=JSON.parse(localStorage.getItem('st_web_synced')||'[]');
+    let added=0;
+    web.forEach(w=>{
+      if(!synced.includes(w.id)){
+        DB.enquiries.unshift({id:DB.nextId.e++,fname:w.fname||'',lname:w.lname||'',email:w.email||'',phone:w.phone||'',company:w.company||'',service:w.service||'General',message:w.message||'',status:'New',followup:'',notes:'[From website]',date:w.date||new Date().toISOString().split('T')[0]});
+        synced.push(w.id);added++;
+      }
+    });
+    if(added>0){saveDB();localStorage.setItem('st_web_synced',JSON.stringify(synced));}
+  }catch(e){}
+}
+syncWebEnquiries();
+
+// ══════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const allUsers=[...USERS,...extraUsers];
+  const found=allUsers.find(x=>x.username===u&&x.password===p);
+  if(!found){document.getElementById('loginErr').style.display='block';return;}
+  currentUser=found;
+  document.getElementById('loginErr').style.display='none';
+  document.getElementById('loginScreen').style.display='none';
+  const app=document.getElementById('app');
+  app.style.display='flex';
+  document.getElementById('topName').textContent=found.name;
+  document.getElementById('topRole').textContent=found.role;
+  document.getElementById('topAvatar').textContent=found.initials||found.name.charAt(0);
+  // Hide admin section for non-directors
+  if(found.role!=='Director'){
+    document.getElementById('nav-admin-section').style.display='none';
+    document.getElementById('nav-payroll').style.display='none';
+  }
+  updateBadges();
+  nav('dashboard');
+}
+function doLogout(){
+  currentUser=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+function isDirector(){return currentUser&&currentUser.role==='Director';}
+
+// ══════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════
+let currentNav='dashboard';
+function nav(page){
+  currentNav=page;
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>{if(i.textContent.trim().toLowerCase().startsWith(page.substring(0,4)))i.classList.add('active');});
+  document.getElementById('topModule').textContent={
+    dashboard:'Dashboard',enquiries:'Enquiries',projects:'Projects',
+    hrclients:'HR Clients',candidates:'Candidates',payroll:'Payroll',
+    students:'Students',schools:'School Partners',users:'User Management'
+  }[page]||page;
+  const main=document.getElementById('mainContent');
+  const renders={
+    dashboard:renderDashboard,enquiries:renderEnquiries,projects:renderProjects,
+    hrclients:renderHRClients,candidates:renderCandidates,payroll:renderPayroll,
+    students:renderStudents,schools:renderSchools,users:renderUsers
+  };
+  if(renders[page])main.innerHTML=renders[page]();
+  attachEvents(page);
+}
+
+function updateBadges(){
+  const newEnq=DB.enquiries.filter(e=>e.status==='New').length;
+  document.getElementById('nb-enquiries').textContent=newEnq||'';
+}
+
+// ══════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════
+function renderDashboard(){
+  const totalEnq=DB.enquiries.length;
+  const newLeads=DB.enquiries.filter(e=>e.status==='New').length;
+  const projects=DB.projects.length;
+  const students=DB.students.length;
+  const recentEnq=DB.enquiries.slice(-5).reverse();
+  return `
+  <div class="page-header">
+    <div class="page-title">👋 Welcome back, ${currentUser.name.split(' ')[0]}</div>
+    <div class="page-sub">Here's what's happening at StarTrust today</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat s1"><div class="stat-val">${totalEnq}</div><div class="stat-lbl">Total Enquiries</div><div class="stat-sub">All time</div></div>
+    <div class="stat s2"><div class="stat-val">${newLeads}</div><div class="stat-lbl">New Leads</div><div class="stat-sub">Needs follow up</div></div>
+    <div class="stat s3"><div class="stat-val">${projects}</div><div class="stat-lbl">Active Projects</div><div class="stat-sub">Onboarded clients</div></div>
+    <div class="stat s4"><div class="stat-val">${students}</div><div class="stat-lbl">Students</div><div class="stat-sub">Education placements</div></div>
+  </div>
+  <div class="tbl-wrap">
+    <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);font-weight:700;font-size:0.88rem;color:var(--slate)">Recent Enquiries</div>
+    <table>
+      <thead><tr><th>Name</th><th>Service</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+        ${recentEnq.length?recentEnq.map(e=>`<tr>
+          <td><div class="td-name">${e.fname} ${e.lname}</div><div class="td-sub">${e.email}</div></td>
+          <td><span class="svc ${e.service&&(e.service.includes('School')||e.service.includes('Student')||e.service.includes('Education'))?'edu':'hr'}">${e.service||'—'}</span></td>
+          <td><span class="badge ${statusClass(e.status)}">${e.status}</span></td>
+          <td style="color:var(--muted);font-size:0.78rem">${e.date||'—'}</td>
+        </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--muted)">No enquiries yet</td></tr>'}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// ENQUIRIES
+// ══════════════════════════════════════
+function renderEnquiries(filter=''){
+  let data=DB.enquiries;
+  if(filter)data=data.filter(e=>e.status===filter);
+  return `
+  <div class="page-header">
+    <div class="page-title">📋 Enquiries</div>
+    <div class="page-sub">Manage all incoming client enquiries</div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-title">${data.length} enquiries</div>
+    <div class="search-wrap">🔍 <input id="enqSearch" placeholder="Search..." oninput="filterEnq()"></div>
+    ${isDirector()?`<button class="btn-primary" onclick="openAddEnquiry()">+ Add Enquiry</button>`:''}
+    ${isDirector()?`<button class="btn-sec" onclick="exportEnquiries()">📤 Export</button>`:''}
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Contact</th><th>Company</th><th>Service</th><th>Status</th><th>Date</th><th>Follow Up</th><th>Actions</th></tr></thead>
+      <tbody id="enqTbody">${renderEnqRows(data)}</tbody>
+    </table>
+    ${!data.length?`<div class="empty-state"><div class="empty-icon">📭</div><p>No enquiries yet</p></div>`:''}
+  </div>`;
+}
+
+function renderEnqRows(data){
+  return data.map(e=>`<tr>
+    <td><div class="td-name">${e.fname} ${e.lname}</div></td>
+    <td><div>${e.email}</div><div class="td-sub">${e.phone||''}</div></td>
+    <td style="font-size:0.78rem">${e.company||'—'}</td>
+    <td><span class="svc ${isEdu(e.service)?'edu':'hr'}">${e.service||'—'}</span></td>
+    <td><span class="badge ${statusClass(e.status)}">${e.status}</span></td>
+    <td style="color:var(--muted);font-size:0.78rem">${e.date||'—'}</td>
+    <td style="font-size:0.78rem;color:${e.followup?'var(--rose)':'var(--muted)'}">${e.followup||'—'}</td>
+    <td><div class="act-row">
+      <button class="act primary" onclick="viewEnquiry(${e.id})">View</button>
+      <button class="convert-btn" onclick="convertToProject(${e.id})" title="Convert to Project">→ Project</button>
+      ${isDirector()?`<button class="act danger" onclick="delEnquiry(${e.id})">🗑</button>`:''}
+    </div></td>
+  </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">No results</td></tr>';
+}
+
+function filterEnq(){
+  const q=document.getElementById('enqSearch').value.toLowerCase();
+  const filtered=DB.enquiries.filter(e=>
+    (e.fname+' '+e.lname).toLowerCase().includes(q)||
+    e.email.toLowerCase().includes(q)||
+    (e.service||'').toLowerCase().includes(q)||
+    (e.company||'').toLowerCase().includes(q)
+  );
+  document.getElementById('enqTbody').innerHTML=renderEnqRows(filtered);
+}
+
+function viewEnquiry(id){
+  const e=DB.enquiries.find(x=>x.id===id);if(!e)return;
+  openModal('Enquiry — '+e.fname+' '+e.lname,`
+    <div class="detail-section">
+      <h4>Contact Information</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>Full Name</label><p>${e.fname} ${e.lname}</p></div>
+        <div class="detail-item"><label>Email</label><p>${e.email}</p></div>
+        <div class="detail-item"><label>Phone / WhatsApp</label><p>${e.phone||'—'}</p></div>
+        <div class="detail-item"><label>Company</label><p>${e.company||'—'}</p></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>Enquiry Details</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>Service</label><p>${e.service||'—'}</p></div>
+        <div class="detail-item"><label>Date Received</label><p>${e.date||'—'}</p></div>
+        <div class="detail-item detail-full"><label>Message</label><p style="color:var(--mid);line-height:1.6">${e.message||'—'}</p></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>Follow Up</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>Status</label>
+          <select id="eStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            ${['New','Contacted','Proposal Sent','Closed Won','Closed Lost'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="detail-item"><label>Follow Up Date</label><input type="date" id="eFollowup" value="${e.followup||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item detail-full"><label>Notes</label><textarea id="eNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:80px;outline:none">${e.notes||''}</textarea></div>
+      </div>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveEnquiry(${id})">Save Changes</button>`
+  );
+}
+
+function saveEnquiry(id){
+  const e=DB.enquiries.find(x=>x.id===id);if(!e)return;
+  e.status=document.getElementById('eStatus').value;
+  e.followup=document.getElementById('eFollowup').value;
+  e.notes=document.getElementById('eNotes').value;
+  saveDB();updateBadges();closeModal();nav('enquiries');showToast('Enquiry updated!');
+}
+
+function openAddEnquiry(){
+  openModal('Add Enquiry',`
+    <div class="form-grid">
+      <div class="form-group"><label>First Name *</label><input id="af1" placeholder="e.g. John"></div>
+      <div class="form-group"><label>Last Name</label><input id="af2" placeholder="e.g. Tan"></div>
+      <div class="form-group"><label>Email *</label><input id="af3" type="email" placeholder="john@example.com"></div>
+      <div class="form-group"><label>Phone / WhatsApp</label><input id="af4" placeholder="+65 9xxx xxxx"></div>
+      <div class="form-group"><label>Company</label><input id="af5" placeholder="Company Pte Ltd / N/A"></div>
+      <div class="form-group"><label>Service</label><select id="af6">${svcOptions()}</select></div>
+      <div class="form-group form-full"><label>Message</label><textarea id="af7" placeholder="Client's enquiry..."></textarea></div>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="addEnquiry()">Add Enquiry</button>`
+  );
+}
+
+function addEnquiry(){
+  const f=v=>document.getElementById(v).value.trim();
+  if(!f('af1')||!f('af3')){showToast('Name and email required!');return;}
+  DB.enquiries.unshift({
+    id:DB.nextId.e++,fname:f('af1'),lname:f('af2'),email:f('af3'),
+    phone:f('af4'),company:f('af5'),service:f('af6'),message:f('af7'),
+    status:'New',followup:'',notes:'',date:today()
+  });
+  saveDB();updateBadges();closeModal();nav('enquiries');showToast('Enquiry added! 🎉');
+}
+
+function delEnquiry(id){
+  if(!confirm('Delete this enquiry?'))return;
+  DB.enquiries=DB.enquiries.filter(e=>e.id!==id);
+  saveDB();updateBadges();nav('enquiries');showToast('Deleted!');
+}
+
+function convertToProject(id){
+  const e=DB.enquiries.find(x=>x.id===id);if(!e)return;
+  if(!confirm(`Convert ${e.fname} ${e.lname}'s enquiry to a Project?`))return;
+  DB.projects.unshift({
+    id:DB.nextId.p++,clientName:e.fname+' '+e.lname,company:e.company||'',
+    email:e.email,phone:e.phone||'',service:e.service||'',
+    startDate:today(),status:'Active',services:[e.service||''],notes:'',
+    enquiryId:id
+  });
+  e.status='Closed Won';
+  saveDB();nav('projects');showToast('Converted to Project! ✅');
+}
+
+function exportEnquiries(){
+  const h=['ID','First Name','Last Name','Email','Phone','Company','Service','Status','Date','Follow Up','Notes'];
+  const r=DB.enquiries.map(e=>[e.id,e.fname,e.lname,e.email,e.phone||'',e.company||'',e.service||'',e.status,e.date||'',e.followup||'',(e.notes||'').replace(/,/g,' ')]);
+  dlCSV([h,...r],'enquiries');
+}
+
+// ══════════════════════════════════════
+// PROJECTS
+// ══════════════════════════════════════
+function renderProjects(){
+  const data=DB.projects;
+  return `
+  <div class="page-header">
+    <div class="page-title">🏆 Projects</div>
+    <div class="page-sub">Successfully onboarded clients</div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-title">${data.length} projects</div>
+    <button class="btn-primary" onclick="openAddProject()">+ Add Project</button>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Client</th><th>Company</th><th>Service</th><th>Start Date</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${data.length?data.map(p=>`<tr>
+        <td><div class="td-name">${p.clientName}</div><div class="td-sub">${p.email}</div></td>
+        <td style="font-size:0.82rem">${p.company||'—'}</td>
+        <td><span class="svc ${isEdu(p.service)?'edu':'hr'}">${p.service||'—'}</span></td>
+        <td style="font-size:0.78rem;color:var(--muted)">${p.startDate||'—'}</td>
+        <td><span class="badge ${p.status==='Active'?'b-active':'b-pending'}">${p.status}</span></td>
+        <td><div class="act-row">
+          <button class="act primary" onclick="viewProject(${p.id})">View</button>
+          ${isDirector()?`<button class="act danger" onclick="delProject(${p.id})">🗑</button>`:''}
+        </div></td>
+      </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No projects yet</td></tr>'}</tbody>
+    </table>
+  </div>`;
+}
+
+function viewProject(id){
+  const p=DB.projects.find(x=>x.id===id);if(!p)return;
+  const hrSvcs=['HR Operations Setup','Recruitment & Interview Support','Employee Onboarding','HR Policy Development','Outsourced HR Support','Work Pass Application','Leave Management','Payroll Setup','Employee Handbook','Job Description Writing'];
+  const eduSvcs=['School Placement','Application Assistance','Student Pass Advisory','Education Pathway Consultation','University Application','Language School Placement'];
+  openModal('Project — '+p.clientName,`
+    <div class="detail-section">
+      <h4>Client Details</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>Client Name</label><p>${p.clientName}</p></div>
+        <div class="detail-item"><label>Company</label><p>${p.company||'—'}</p></div>
+        <div class="detail-item"><label>Email</label><p>${p.email}</p></div>
+        <div class="detail-item"><label>Phone</label><p>${p.phone||'—'}</p></div>
+        <div class="detail-item"><label>Start Date</label><p>${p.startDate||'—'}</p></div>
+        <div class="detail-item"><label>Status</label>
+          <select id="pStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            ${['Active','On Hold','Completed'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>Services Rendered</h4>
+      <div class="svc-checks">
+        ${[...hrSvcs,...eduSvcs].map(s=>`<label class="svc-check"><input type="checkbox" class="svc-chk" value="${s}" ${(p.services||[]).includes(s)?'checked':''}> ${s}</label>`).join('')}
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>Notes</h4>
+      <textarea id="pNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:80px;outline:none">${p.notes||''}</textarea>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveProject(${id})">Save Changes</button>`
+  );
+}
+
+function saveProject(id){
+  const p=DB.projects.find(x=>x.id===id);if(!p)return;
+  p.status=document.getElementById('pStatus').value;
+  p.notes=document.getElementById('pNotes').value;
+  p.services=Array.from(document.querySelectorAll('.svc-chk:checked')).map(c=>c.value);
+  saveDB();closeModal();nav('projects');showToast('Project updated!');
+}
+
+function openAddProject(){
+  openModal('Add Project',`
+    <div class="form-grid">
+      <div class="form-group"><label>Client Name *</label><input id="pp1" placeholder="Full name"></div>
+      <div class="form-group"><label>Company</label><input id="pp2" placeholder="Company Pte Ltd"></div>
+      <div class="form-group"><label>Email *</label><input id="pp3" type="email"></div>
+      <div class="form-group"><label>Phone</label><input id="pp4" placeholder="+65 9xxx xxxx"></div>
+      <div class="form-group"><label>Service Type</label><select id="pp5">${svcOptions()}</select></div>
+      <div class="form-group"><label>Start Date</label><input id="pp6" type="date" value="${today()}"></div>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="addProject()">Add Project</button>`
+  );
+}
+
+function addProject(){
+  const f=v=>document.getElementById(v).value.trim();
+  if(!f('pp1')||!f('pp3')){showToast('Name and email required!');return;}
+  DB.projects.unshift({
+    id:DB.nextId.p++,clientName:f('pp1'),company:f('pp2'),email:f('pp3'),
+    phone:f('pp4'),service:f('pp5'),startDate:f('pp6'),status:'Active',services:[f('pp5')],notes:''
+  });
+  saveDB();closeModal();nav('projects');showToast('Project added!');
+}
+
+function delProject(id){
+  if(!confirm('Delete this project?'))return;
+  DB.projects=DB.projects.filter(p=>p.id!==id);
+  saveDB();nav('projects');showToast('Deleted!');
+}
+
+// ══════════════════════════════════════
+// HR CLIENTS
+// ══════════════════════════════════════
+function renderHRClients(){
+  const data=DB.hrclients;
+  return `
+  <div class="page-header">
+    <div class="page-title">🏢 HR Clients</div>
+    <div class="page-sub">Track HR services rendered per company</div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-title">${data.length} clients</div>
+    <button class="btn-primary" onclick="openAddHR()">+ Add HR Client</button>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Company</th><th>Contact</th><th>Employees</th><th>Services</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${data.length?data.map(h=>`<tr>
+        <td><div class="td-name">${h.company}</div><div class="td-sub">Since ${h.since||'—'}</div></td>
+        <td><div>${h.contactName||'—'}</div><div class="td-sub">${h.email||'—'}</div></td>
+        <td style="font-size:0.82rem">${h.employees||'—'}</td>
+        <td style="font-size:0.75rem;max-width:200px">${(h.services||[]).slice(0,2).map(s=>`<span class="svc hr" style="margin:1px;display:inline-block">${s}</span>`).join('')}${(h.services||[]).length>2?`<span style="color:var(--muted);font-size:0.7rem"> +${(h.services||[]).length-2}</span>`:''}</td>
+        <td><span class="badge ${h.status==='Active'?'b-active':'b-pending'}">${h.status||'Active'}</span></td>
+        <td><div class="act-row">
+          <button class="act primary" onclick="viewHR(${h.id})">View</button>
+          ${isDirector()?`<button class="act danger" onclick="delHR(${h.id})">🗑</button>`:''}
+        </div></td>
+      </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No HR clients yet</td></tr>'}</tbody>
+    </table>
+  </div>`;
+}
+
+function openAddHR(){
+  const hrSvcs=['HR Operations Setup','Recruitment & Interview Support','Employee Onboarding','HR Policy Development','Outsourced HR Support','Work Pass Application','Leave Management','Payroll Setup','Employee Handbook','Job Description Writing'];
+  openModal('Add HR Client',`
+    <div class="form-grid">
+      <div class="form-group form-full"><label>Company Name *</label><input id="hr1" placeholder="Company Pte Ltd"></div>
+      <div class="form-group"><label>Contact Person</label><input id="hr2" placeholder="Name"></div>
+      <div class="form-group"><label>Email</label><input id="hr3" type="email"></div>
+      <div class="form-group"><label>Phone</label><input id="hr4"></div>
+      <div class="form-group"><label>No. of Employees</label><input id="hr5" type="number" placeholder="e.g. 15"></div>
+      <div class="form-group"><label>Client Since</label><input id="hr6" type="date" value="${today()}"></div>
+      <div class="form-group form-full"><label>Services Rendered</label>
+        <div class="svc-checks">${hrSvcs.map(s=>`<label class="svc-check"><input type="checkbox" class="hr-svc-chk" value="${s}"> ${s}</label>`).join('')}</div>
+      </div>
+      <div class="form-group form-full"><label>Notes</label><textarea id="hr7"></textarea></div>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="addHR()">Add Client</button>`
+  );
+}
+
+function addHR(){
+  const f=v=>document.getElementById(v).value.trim();
+  if(!f('hr1')){showToast('Company name required!');return;}
+  const svcs=Array.from(document.querySelectorAll('.hr-svc-chk:checked')).map(c=>c.value);
+  DB.hrclients.unshift({
+    id:DB.nextId.h++,company:f('hr1'),contactName:f('hr2'),email:f('hr3'),
+    phone:f('hr4'),employees:f('hr5'),since:f('hr6'),services:svcs,notes:f('hr7'),status:'Active'
+  });
+  saveDB();closeModal();nav('hrclients');showToast('HR Client added!');
+}
+
+function viewHR(id){
+  const h=DB.hrclients.find(x=>x.id===id);if(!h)return;
+  openModal(h.company,`
+    <div class="detail-section">
+      <h4>Company Info</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>Contact Person</label><p>${h.contactName||'—'}</p></div>
+        <div class="detail-item"><label>Email</label><p>${h.email||'—'}</p></div>
+        <div class="detail-item"><label>Phone</label><p>${h.phone||'—'}</p></div>
+        <div class="detail-item"><label>Employees</label><p>${h.employees||'—'}</p></div>
+        <div class="detail-item"><label>Client Since</label><p>${h.since||'—'}</p></div>
+        <div class="detail-item"><label>Status</label>
+          <select id="hStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            ${['Active','On Hold','Inactive'].map(s=>`<option ${h.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>Services Rendered</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem">${(h.services||[]).map(s=>`<span class="svc hr">${s}</span>`).join('')||'None selected'}</div>
+    </div>
+    <div class="detail-section">
+      <h4>Notes</h4>
+      <textarea id="hNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:80px;outline:none">${h.notes||''}</textarea>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveHR(${id})">Save</button>`
+  );
+}
+
+function saveHR(id){
+  const h=DB.hrclients.find(x=>x.id===id);if(!h)return;
+  h.status=document.getElementById('hStatus').value;
+  h.notes=document.getElementById('hNotes').value;
+  saveDB();closeModal();nav('hrclients');showToast('HR Client updated!');
+}
+
+function delHR(id){
+  if(!confirm('Delete this HR client?'))return;
+  DB.hrclients=DB.hrclients.filter(h=>h.id!==id);
+  saveDB();nav('hrclients');showToast('Deleted!');
+}
+
+// ══════════════════════════════════════
+// CANDIDATES
+// ══════════════════════════════════════
+function renderCandidates(){
+  const data=DB.candidates;
+  return `
+  <div class="page-header">
+    <div class="page-title">👤 Candidates</div>
+    <div class="page-sub">Track candidates and their resumes</div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-title">${data.length} candidates</div>
+    <button class="btn-primary" onclick="openAddCandidate()">+ Add Candidate</button>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Candidate</th><th>Role Applied</th><th>HR Client</th><th>Interview Date</th><th>Status</th><th>Resume</th><th>Actions</th></tr></thead>
+      <tbody>${data.length?data.map(c=>`<tr>
+        <td><div class="td-name">${c.name}</div><div class="td-sub">${c.email||''}</div></td>
+        <td style="font-size:0.82rem">${c.role||'—'}</td>
+        <td style="font-size:0.82rem">${c.hrClient||'—'}</td>
+        <td style="font-size:0.78rem;color:var(--muted)">${c.interviewDate||'—'}</td>
+        <td><span class="badge ${candStatus(c.status)}">${c.status||'Applied'}</span></td>
+        <td>${c.resumeUrl?`<a href="${c.resumeUrl}" target="_blank" style="color:var(--indigo);font-size:0.78rem;font-weight:600">📄 View</a>`:'<span style="color:var(--muted);font-size:0.75rem">No file</span>'}</td>
+        <td><div class="act-row">
+          <button class="act primary" onclick="viewCandidate(${c.id})">View</button>
+          ${isDirector()?`<button class="act danger" onclick="delCandidate(${c.id})">🗑</button>`:''}
+        </div></td>
+      </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No candidates yet</td></tr>'}</tbody>
+    </table>
+  </div>`;
+}
+
+function openAddCandidate(){
+  openModal('Add Candidate',`
+    <div class="form-grid">
+      <div class="form-group"><label>Full Name *</label><input id="ca1" placeholder="e.g. John Tan"></div>
+      <div class="form-group"><label>Email</label><input id="ca2" type="email"></div>
+      <div class="form-group"><label>Phone</label><input id="ca3" placeholder="+65 9xxx xxxx"></div>
+      <div class="form-group"><label>Nationality</label><input id="ca4" placeholder="e.g. Malaysian"></div>
+      <div class="form-group"><label>Role Applied</label><input id="ca5" placeholder="e.g. Software Engineer"></div>
+      <div class="form-group"><label>HR Client (Company)</label><input id="ca6" placeholder="Which company is hiring"></div>
+      <div class="form-group"><label>Interview Date</label><input id="ca7" type="date"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="ca8">
+          <option>Applied</option><option>Shortlisted</option><option>Interview Scheduled</option>
+          <option>Offered</option><option>Hired</option><option>Rejected</option>
+        </select>
+      </div>
+      <div class="form-group form-full">
+        <label>Resume (Upload PDF)</label>
+        <div class="file-drop" id="resumeDrop" onclick="document.getElementById('resumeFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event,'resume')">
+          <div>📄 Click to upload or drag & drop</div>
+          <p>PDF, DOC, DOCX — max 5MB</p>
+        </div>
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" style="display:none" onchange="handleFile(this,'resume')">
+        <div id="resumePreview"></div>
+      </div>
+      <div class="form-group form-full"><label>Notes</label><textarea id="ca9"></textarea></div>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="addCandidate()">Add Candidate</button>`
+  );
+}
+
+let pendingFile={resume:null};
+
+function handleFile(input,type){
+  const file=input.files[0];if(!file)return;
+  if(file.size>5*1024*1024){showToast('File too large! Max 5MB');return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    pendingFile[type]={name:file.name,data:e.target.result,type:file.type};
+    const prev=document.getElementById(type+'Preview');
+    if(prev)prev.innerHTML=`<div class="file-list"><div class="file-item">📄 <a href="${e.target.result}" target="_blank">${file.name}</a> <button class="file-del" onclick="clearFile('${type}')">✕</button></div></div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearFile(type){
+  pendingFile[type]=null;
+  const prev=document.getElementById(type+'Preview');
+  if(prev)prev.innerHTML='';
+}
+
+function dragOver(e){e.preventDefault();e.currentTarget.classList.add('drag');}
+function dropFile(e,type){
+  e.preventDefault();e.currentTarget.classList.remove('drag');
+  const file=e.dataTransfer.files[0];
+  if(!file)return;
+  const inp=document.getElementById(type+'File');
+  const dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;
+  handleFile(inp,type);
+}
+
+function addCandidate(){
+  const f=v=>document.getElementById(v).value.trim();
+  if(!f('ca1')){showToast('Name required!');return;}
+  DB.candidates.unshift({
+    id:DB.nextId.c++,name:f('ca1'),email:f('ca2'),phone:f('ca3'),
+    nationality:f('ca4'),role:f('ca5'),hrClient:f('ca6'),interviewDate:f('ca7'),
+    status:f('ca8'),notes:f('ca9'),
+    resumeUrl:pendingFile.resume?pendingFile.resume.data:'',
+    resumeName:pendingFile.resume?pendingFile.resume.name:'',
+    dateAdded:today()
+  });
+  pendingFile.resume=null;
+  saveDB();closeModal();nav('candidates');showToast('Candidate added!');
+}
+
+function viewCandidate(id){
+  const c=DB.candidates.find(x=>x.id===id);if(!c)return;
+  openModal('Candidate — '+c.name,`
+    <div class="detail-section">
+      <h4>Personal Info</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>Full Name</label><p>${c.name}</p></div>
+        <div class="detail-item"><label>Email</label><p>${c.email||'—'}</p></div>
+        <div class="detail-item"><label>Phone</label><p>${c.phone||'—'}</p></div>
+        <div class="detail-item"><label>Nationality</label><p>${c.nationality||'—'}</p></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>Application Details</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>Role Applied</label><p>${c.role||'—'}</p></div>
+        <div class="detail-item"><label>HR Client</label><p>${c.hrClient||'—'}</p></div>
+        <div class="detail-item"><label>Interview Date</label><p>${c.interviewDate||'—'}</p></div>
+        <div class="detail-item"><label>Status</label>
+          <select id="cStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            ${['Applied','Shortlisted','Interview Scheduled','Offered','Hired','Rejected'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+    ${c.resumeUrl?`<div class="detail-section"><h4>Resume</h4><div class="file-list"><div class="file-item">📄 <a href="${c.resumeUrl}" target="_blank">${c.resumeName||'Resume'}</a></div></div></div>`:''}
+    <div class="detail-section"><h4>Notes</h4><textarea id="cNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:80px;outline:none">${c.notes||''}</textarea></div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveCandidate(${id})">Save</button>`
+  );
+}
+
+function saveCandidate(id){
+  const c=DB.candidates.find(x=>x.id===id);if(!c)return;
+  c.status=document.getElementById('cStatus').value;
+  c.notes=document.getElementById('cNotes').value;
+  saveDB();closeModal();nav('candidates');showToast('Candidate updated!');
+}
+
+function delCandidate(id){
+  if(!confirm('Delete this candidate?'))return;
+  DB.candidates=DB.candidates.filter(c=>c.id!==id);
+  saveDB();nav('candidates');showToast('Deleted!');
+}
+
+// ══════════════════════════════════════
+// STUDENTS
+// ══════════════════════════════════════
+function renderStudents(){
+  const data=DB.students;
+  return `
+  <div class="page-header">
+    <div class="page-title">🎓 Students</div>
+    <div class="page-sub">Track student placements and Student Pass applications</div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-title">${data.length} students</div>
+    <button class="btn-primary" onclick="openAddStudent()">+ Add Student</button>
+    ${isDirector()?`<button class="btn-sec" onclick="exportStudents()">📤 Export</button>`:''}
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Student</th><th>Nationality</th><th>School</th><th>Course</th><th>STP Status</th><th>School Paid</th><th>Actions</th></tr></thead>
+      <tbody>${data.length?data.map(s=>`<tr>
+        <td><div class="td-name">${s.name}</div><div class="td-sub">${s.email||''}</div></td>
+        <td style="font-size:0.82rem">${s.nationality||'—'}</td>
+        <td style="font-size:0.82rem">${s.school||'—'}</td>
+        <td style="font-size:0.78rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.course||'—'}</td>
+        <td><span class="badge ${stpClass(s.stpStatus)}">${s.stpStatus||'Pending'}</span></td>
+        <td>${s.schoolPaid?`<span style="color:var(--green);font-size:0.78rem;font-weight:700">✅ ${s.paymentDate||''}</span>`:`<span style="color:var(--muted);font-size:0.75rem">Not yet</span>`}</td>
+        <td><div class="act-row">
+          <button class="act primary" onclick="viewStudent(${s.id})">View</button>
+          ${isDirector()?`<button class="act danger" onclick="delStudent(${s.id})">🗑</button>`:''}
+        </div></td>
+      </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No students yet</td></tr>'}</tbody>
+    </table>
+  </div>`;
+}
+
+function openAddStudent(){
+  const schools=DB.schools.map(s=>s.name);
+  openModal('Add Student',`
+    <div class="form-grid">
+      <div class="form-group"><label>Full Name *</label><input id="st1" placeholder="e.g. Ahmad bin Razak"></div>
+      <div class="form-group"><label>Nationality *</label><input id="st2" placeholder="e.g. Malaysian"></div>
+      <div class="form-group"><label>Email</label><input id="st3" type="email"></div>
+      <div class="form-group"><label>Phone / WhatsApp</label><input id="st4"></div>
+      <div class="form-group"><label>Passport No.</label><input id="st5"></div>
+      <div class="form-group"><label>Date of Birth</label><input id="st6" type="date"></div>
+      <div class="form-group"><label>School *</label>
+        <select id="st7"><option value="">Select school...</option>${schools.map(s=>`<option>${s}</option>`).join('')}<option>Other</option></select>
+      </div>
+      <div class="form-group"><label>Course</label><input id="st8" placeholder="e.g. Diploma in Business"></div>
+      <div class="form-group"><label>Application Date</label><input id="st9" type="date" value="${today()}"></div>
+      <div class="form-group"><label>Course Start Date</label><input id="st10" type="date"></div>
+      <div class="form-group"><label>STP Application Date</label><input id="st11" type="date"></div>
+      <div class="form-group"><label>STP Approval Date</label><input id="st12" type="date"></div>
+      <div class="form-group"><label>STP Status</label>
+        <select id="st13">
+          <option>Pending</option><option>Applied</option><option>Approved</option>
+          <option>Rejected</option><option>Not Required</option>
+        </select>
+      </div>
+      <div class="form-group"><label>School Paid Commission?</label>
+        <select id="st14"><option value="0">Not Yet</option><option value="1">Yes</option></select>
+      </div>
+      <div class="form-group"><label>Payment Date</label><input id="st15" type="date"></div>
+      <div class="form-group"><label>Commission Amount (SGD)</label><input id="st16" type="number" placeholder="e.g. 500"></div>
+      <div class="form-group form-full"><label>Notes</label><textarea id="st17"></textarea></div>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="addStudent()">Add Student</button>`
+  );
+}
+
+function addStudent(){
+  const f=v=>document.getElementById(v).value.trim();
+  if(!f('st1')||!f('st2')){showToast('Name and nationality required!');return;}
+  DB.students.unshift({
+    id:DB.nextId.s++,name:f('st1'),nationality:f('st2'),email:f('st3'),phone:f('st4'),
+    passport:f('st5'),dob:f('st6'),school:f('st7'),course:f('st8'),
+    appDate:f('st9'),startDate:f('st10'),stpAppDate:f('st11'),stpApprovalDate:f('st12'),
+    stpStatus:f('st13'),schoolPaid:document.getElementById('st14').value==='1',
+    paymentDate:f('st15'),commissionAmt:f('st16'),notes:f('st17'),dateAdded:today()
+  });
+  saveDB();closeModal();nav('students');showToast('Student added!');
+}
+
+function viewStudent(id){
+  const s=DB.students.find(x=>x.id===id);if(!s)return;
+  const schools=DB.schools.map(sc=>sc.name);
+  openModal('Student — '+s.name,`
+    <div class="detail-section">
+      <h4>Personal Details</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>Full Name</label><p>${s.name}</p></div>
+        <div class="detail-item"><label>Nationality</label><p>${s.nationality}</p></div>
+        <div class="detail-item"><label>Email</label><p>${s.email||'—'}</p></div>
+        <div class="detail-item"><label>Phone</label><p>${s.phone||'—'}</p></div>
+        <div class="detail-item"><label>Passport No.</label><p>${s.passport||'—'}</p></div>
+        <div class="detail-item"><label>Date of Birth</label><p>${s.dob||'—'}</p></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>School Placement</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>School</label>
+          <select id="sSchool" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            ${schools.map(sc=>`<option ${s.school===sc?'selected':''}>${sc}</option>`).join('')}<option ${!schools.includes(s.school)?'selected':''}>Other</option>
+          </select>
+        </div>
+        <div class="detail-item"><label>Course</label><input id="sCourse" value="${s.course||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>Application Date</label><input id="sAppDate" type="date" value="${s.appDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>Course Start Date</label><input id="sStartDate" type="date" value="${s.startDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>Student Pass (STP)</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>STP Application Date</label><input id="sStpApp" type="date" value="${s.stpAppDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>STP Approval Date</label><input id="sStpApproval" type="date" value="${s.stpApprovalDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <div class="detail-item"><label>STP Status</label>
+          <select id="sStpStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            ${['Pending','Applied','Approved','Rejected','Not Required'].map(st=>`<option ${s.stpStatus===st?'selected':''}>${st}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <h4>Commission Payment</h4>
+      <div class="detail-row">
+        <div class="detail-item"><label>School Paid?</label>
+          <select id="sSchoolPaid" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
+            <option value="0" ${!s.schoolPaid?'selected':''}>Not Yet</option>
+            <option value="1" ${s.schoolPaid?'selected':''}>Yes — Paid</option>
+          </select>
+        </div>
+        <div class="detail-item"><label>Payment Date</label><input id="sPayDate" type="date" value="${s.paymentDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+        <d
+        <div class="detail-item"><label>Commission (SGD)</label><input id="sComm" type="number" value="${s.commissionAmt||''}" placeholder="500" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
+      </div>
+    </div>
+    <div class="detail-section"><h4>Notes</h4><textarea id="sNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:DM Sans,sans-serif;resize:vertical;min-height:80px;outline:none">${s.notes||''}</textarea></div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="saveStudent(${id})">Save Changes</button>`
+  );
+}
+
+function saveStudent(id){
+  const s=DB.students.find(x=>x.id===id);if(!s)return;
+  s.school=document.getElementById('sSchool').value;
+  s.course=document.getElementById('sCourse').value;
+  s.stpStatus=document.getElementById('sStpStatus').value;
+  s.schoolPaid=document.getElementById('sSchoolPaid').value==='1';
+  s.paymentDate=document.getElementById('sPayDate').value;
+  s.commissionAmt=document.getElementById('sComm').value;
+  s.notes=document.getElementById('sNotes').value;
+  saveDB();closeModal();nav('students');showToast('Student updated!');
+}
+
+function delStudent(id){
+  if(!confirm('Delete?'))return;
+  DB.students=DB.students.filter(s=>s.id!==id);
+  saveDB();nav('students');showToast('Deleted!');
+}
+
+function exportStudents(){
+  const h=['Name','Nationality','School','Course','STP Status','School Paid','Payment Date','Commission'];
+  const r=DB.students.map(s=>[s.name,s.nationality,s.school||'',s.course||'',s.stpStatus||'',s.schoolPaid?'Yes':'No',s.paymentDate||'',s.commissionAmt||'']);
+  dlCSV([h,...r],'students');
+}
+
+function renderSchools(){
+  const data=DB.schools;
+  return `<div class="page-header"><div class="page-title">🏫 School Partners</div><div class="page-sub">Education partner database</div></div>
+  <div class="toolbar"><div class="toolbar-title">${data.length} partners</div><button class="btn-primary" onclick="openAddSchool()">+ Add School</button></div>
+  <div class="tbl-wrap"><table><thead><tr><th>School</th><th>Type</th><th>Commission</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
+  <tbody>${data.map(s=>`<tr>
+    <td><div class="td-name">${s.name}</div><div class="td-sub">${s.courses||''}</div></td>
+    <td><span class="svc edu">${s.type||'—'}</span></td>
+    <td style="font-weight:700;color:var(--green)">${s.commissionRate||'—'}</td>
+    <td><div style="font-size:0.78rem">${s.contact||'—'}</div><div class="td-sub">${s.phone||''}</div></td>
+    <td><span class="badge ${s.status==='Active'?'b-active':'b-pending'}">${s.status||'Active'}</span></td>
+    <td><div class="act-row"><button class="act primary" onclick="viewSchool(${s.id})">View</button>${isDirector()?`<button class="act danger" onclick="delSchool(${s.id})">🗑</button>`:''}</div></td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+function openAddSchool(){
+  openModal('Add School',`<div class="form-grid">
+    <div class="form-group form-full"><label>School Name *</label><input id="sc1" placeholder="TMC Academy"></div>
+    <div class="form-group"><label>Type</label><select id="sc2"><option>Private</option><option>University</option><option>Language School</option></select></div>
+    <div class="form-group"><label>Commission Rate</label><input id="sc3" placeholder="15%"></div>
+    <div class="form-group"><label>Contact Email</label><input id="sc4" type="email"></div>
+    <div class="form-group"><label>Phone</label><input id="sc5"></div>
+    <div class="form-group form-full"><label>Courses</label><input id="sc6" placeholder="Business, IT..."></div>
+    <div class="form-group form-full"><label>Notes</label><textarea id="sc7"></textarea></div>
+  </div>`,
+  `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="addSchool()">Add</button>`);
+}
+
+function addSchool(){
+  const f=v=>document.getElementById(v).value.trim();
+  if(!f('sc1')){showToast('Name required!');return;}
+  const newId=DB.schools.length?Math.max(...DB.schools.map(s=>s.id))+1:1;
+  DB.schools.push({id:newId,name:f('sc1'),type:f('sc2'),commissionRate:f('sc3'),contact:f('sc4'),phone:f('sc5'),courses:f('sc6'),notes:f('sc7'),status:'Active'});
+  saveDB();closeModal();nav('schools');showToast('School added!');
+}
+
+function viewSchool(id){
+  const s=DB.schools.find(x=>x.id===id);if(!s)return;
+  openModal(s.name,`<div class="detail-section"><h4>Details</h4>
+    <div class="detail-row">
+      <div class="detail-item"><label>Type</label><p>${s.type||'—'}</p></div>
+      <div class="detail-item"><label>Commission</label><p style="color:var(--green);font-weight:700">${s.commissionRate||'—'}</p></div>
+      <div class="detail-item"><label>Email</label><p>${s.contact||'—'}</p></div>
+      <div class="detail-item"><label>Phone</label><p>${s.phone||'—'}</p></div>
+      <div class="detail-item detail-full"><label>Courses</label><p>${s.courses||'—'}</p></div>
+      <div class="detail-item detail-full"><label>Notes</label>
+        <textarea id="scNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem;font-size:0.82rem;font-family:DM Sans,sans-serif;resize:vertical;min-height:80px;outline:none">${s.notes||''}</textarea>
+      </div>
+    </div></div>`,
+  `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="saveSchool(${id})">Save</button>`);
+}
+
+function saveSchool(id){
+  const s=DB.schools.find(x=>x.id===id);if(!s)return;
+  s.notes=document.getElementById('scNotes').value;
+  saveDB();closeModal();nav('schools');showToast('Updated!');
+}
+
+function delSchool(id){
+  if(!confirm('Delete?'))return;
+  DB.schools=DB.schools.filter(s=>s.id!==id);
+  saveDB();nav('schools');showToast('Deleted!');
+}
+
+function renderPayroll(){
+  if(!isDirector())return'<div class="empty-state"><div class="empty-icon">🔒</div><p>Director access only</p></div>';
+  return `<div class="page-header"><div class="page-title">💰 Payroll Calculator</div><div class="page-sub">Singapore CPF-compliant — SC, PR, EP, S Pass, Work Permit</div></div>
+  <div class="pay-section"><h3>👤 Employee</h3>
+    <div class="pay-row">
+      <div class="pay-field"><label>Name</label><input id="pyName" placeholder="Chloe Lu"></div>
+      <div class="pay-field"><label>Designation</label><input id="pyDesig" placeholder="HR Consultant"></div>
+      <div class="pay-field"><label>Employment Type</label><select id="pyType" onchange="calcPay()">
+        <option value="sc">Singapore Citizen</option><option value="pr1">PR 1st Year</option>
+        <option value="pr2">PR 2nd Year</option><option value="pr3">PR 3rd Year+</option>
+        <option value="ep">Employment Pass</option><option value="sp">S Pass</option><option value="wp">Work Permit</option>
+      </select></div>
+    </div>
+    <div class="pay-row">
+      <div class="pay-field"><label>Basic (SGD)</label><input id="pyBasic" type="number" value="0" oninput="calcPay()"></div>
+      <div class="pay-field"><label>Allowances</label><input id="pyAllow" type="number" value="0" oninput="calcPay()"></div>
+      <div class="pay-field"><label>Overtime</label><input id="pyOT" type="number" value="0" oninput="calcPay()"></div>
+    </div>
+    <div class="pay-row">
+      <div class="pay-field"><label>Bonus</label><input id="pyBonus" type="number" value="0" oninput="calcPay()"></div>
+      <div class="pay-field"><label>Deductions</label><input id="pyDed" type="number" value="0" oninput="calcPay()"></div>
+      <div class="pay-field"><label>Month</label><input id="pyMonth" type="month" value="${new Date().toISOString().slice(0,7)}"></div>
+    </div>
+  </div>
+  <div class="pay-section"><h3>📊 Breakdown</h3>
+    <div class="pay-result">
+      <div class="pay-result-row"><span>Basic Salary</span><span id="r-basic">SGD 0.00</span></div>
+      <div class="pay-result-row"><span>Allowances</span><span id="r-allow">SGD 0.00</span></div>
+      <div class="pay-result-row"><span>Overtime</span><span id="r-ot">SGD 0.00</span></div>
+      <div class="pay-result-row"><span>Bonus</span><span id="r-bonus">SGD 0.00</span></div>
+      <div class="pay-result-row"><span>Gross Pay</span><span id="r-gross">SGD 0.00</span></div>
+      <div class="pay-result-row"><span>Employee CPF</span><span id="r-ecpf" style="color:#fca5a5">- SGD 0.00</span></div>
+      <div class="pay-result-row"><span>Deductions</span><span id="r-ded" style="color:#fca5a5">- SGD 0.00</span></div>
+      <div class="pay-result-row total"><span>Net Take-Home</span><span id="r-net">SGD 0.00</span></div>
+      <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:0.8rem;padding-top:0.8rem">
+        <div class="pay-result-row"><span style="color:rgba(255,255,255,0.4);font-size:0.75rem">Employer CPF</span><span id="r-ercpf" style="color:rgba(255,255,255,0.5)">SGD 0.00</span></div>
+        <div class="pay-result-row"><span style="color:rgba(255,255,255,0.4);font-size:0.75rem">Total Cost to Company</span><span id="r-ctc" style="color:rgba(255,255,255,0.5)">SGD 0.00</span></div>
+      </div>
+    </div>
+    <button class="payslip-btn" onclick="genPayslip()">📄 Generate & Print Payslip</button>
+  </div>`;
+}
+
+function calcPay(){
+  const get=id=>parseFloat(document.getElementById(id)?.value)||0;
+  const b=get('pyBasic'),a=get('pyAllow'),ot=get('pyOT'),bon=get('pyBonus'),ded=get('pyDed');
+  const type=document.getElementById('pyType')?.value||'sc';
+  const gross=b+a+ot+bon;
+  const rates={sc:{ee:0.20,er:0.17},pr1:{ee:0.05,er:0.04},pr2:{ee:0.15,er:0.09},pr3:{ee:0.20,er:0.17},ep:{ee:0,er:0},sp:{ee:0,er:0},wp:{ee:0,er:0}};
+  const r=rates[type]||{ee:0,er:0};
+  const eeCPF=Math.round(gross*r.ee*100)/100,erCPF=Math.round(gross*r.er*100)/100,net=gross-eeCPF-ded;
+  const fmt=n=>`SGD ${n.toFixed(2)}`;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('r-basic',fmt(b));set('r-allow',fmt(a));set('r-ot',fmt(ot));set('r-bonus',fmt(bon));
+  set('r-gross',fmt(gross));set('r-ecpf',`- ${fmt(eeCPF)}`);set('r-ded',`- ${fmt(ded)}`);
+  set('r-net',fmt(net));set('r-ercpf',fmt(erCPF));set('r-ctc',fmt(gross+erCPF));
+}
+
+function genPayslip(){
+  const g=id=>document.getElementById(id)?.value||'';
+  const b=parseFloat(g('pyBasic'))||0,a=parseFloat(g('pyAllow'))||0,ot=parseFloat(g('pyOT'))||0,bon=parseFloat(g('pyBonus'))||0,ded=parseFloat(g('pyDed'))||0;
+  const type=g('pyType');const gross=b+a+ot+bon;
+  const rates={sc:{ee:0.20,er:0.17},pr1:{ee:0.05,er:0.04},pr2:{ee:0.15,er:0.09},pr3:{ee:0.20,er:0.17},ep:{ee:0,er:0},sp:{ee:0,er:0},wp:{ee:0,er:0}};
+  const r=rates[type]||{ee:0,er:0};
+  const eeCPF=Math.round(gross*r.ee*100)/100,net=gross-eeCPF-ded;
+  const fmt=n=>`SGD ${n.toFixed(2)}`;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payslip</title>
+  <style>body{font-family:Arial,sans-serif;max-width:580px;margin:30px auto;font-size:13px;color:#1e293b}
+  .hd{background:#0f172a;color:white;padding:18px 22px;border-radius:8px 8px 0 0}
+  .hd h1{font-size:18px;margin:0 0 2px}.hd p{font-size:10px;opacity:0.5;margin:0}
+  .bd{border:1px solid #e2e8f0;border-top:none;padding:20px 22px;border-radius:0 0 8px 8px}
+  .info{display:flex;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px dashed #e2e8f0}
+  table{width:100%;border-collapse:collapse;margin-bottom:12px}
+  th{background:#f8fafc;text-align:left;padding:7px 10px;font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em}
+  td{padding:7px 10px;border-bottom:1px solid #f8fafc}
+  .tot td{font-weight:700;font-size:14px;border-top:2px solid #e2e8f0;border-bottom:none}
+  .tot td:last-child{color:#e8567a}
+  .ft{text-align:center;font-size:10px;color:#94a3b8;margin-top:14px;padding-top:12px;border-top:1px dashed #e2e8f0}</style></head>
+  <body><div class="hd"><h1>StarTrust Consultancy</h1><p>60 Paya Lebar Road #07-54, Singapore 409051</p></div>
+  <div class="bd"><div class="info">
+    <div><strong>${g('pyName')||'Employee'}</strong><br><span style="color:#94a3b8;font-size:11px">${g('pyDesig')||''}</span></div>
+    <div style="text-align:right"><strong>PAYSLIP</strong><br><span style="font-size:11px;color:#64748b">${g('pyMonth')||''}</span></div>
+  </div>
+  <table><thead><tr><th>Earnings</th><th style="text-align:right">Amount</th></tr></thead><tbody>
+    <tr><td>Basic Salary</td><td style="text-align:right">${fmt(b)}</td></tr>
+    ${a?`<tr><td>Allowances</td><td style="text-align:right">${fmt(a)}</td></tr>`:''}
+    ${ot?`<tr><td>Overtime</td><td style="text-align:right">${fmt(ot)}</td></tr>`:''}
+    ${bon?`<tr><td>Bonus</td><td style="text-align:right">${fmt(bon)}</td></tr>`:''}
+  </tbody></table>
+  <table><thead><tr><th>Deductions</th><th style="text-align:right">Amount</th></tr></thead><tbody>
+    ${eeCPF?`<tr><td>Employee CPF (${(r.ee*100).toFixed(0)}%)</td><td style="text-align:right">- ${fmt(eeCPF)}</td></tr>`:''}
+    ${ded?`<tr><td>Other Deductions</td><td style="text-align:right">- ${fmt(ded)}</td></tr>`:''}
+  </tbody></table>
+  <table><tbody class="tot"><tr><td>Net Take-Home Pay</td><td style="text-align:right">${fmt(net)}</td></tr></tbody></table>
+  <div class="ft">StarTrust Consultancy · admin@startrust-consultancy.com · +65 9853 0670</div>
+  </div></body></html>`;
+  const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
+}
+
+function renderUsers(){
+  if(!isDirector())return'<div class="empty-state"><div class="empty-icon">🔒</div><p>Director access only</p></div>';
+  const all=[...USERS,...extraUsers];
+  return `<div class="page-header"><div class="page-title">👥 User Management</div><div class="page-sub">Manage CRM access</div></div>
+  <div class="toolbar"><div class="toolbar-title">${all.length} users</div><button class="btn-primary" onclick="openAddUser()">+ Add User</button></div>
+  ${all.map(u=>`<div class="user-card">
+    <div class="user-avatar">${u.initials||u.name.charAt(0)}</div>
+    <div class="user-info"><div class="user-name">${u.name}</div><div class="user-email">${u.email||u.username}</div></div>
+    <span class="user-role-badge ${u.role==='Director'?'role-director':'role-admin'}">${u.role}</span>
+    ${u.username!=='chloe913'?`<button class="act danger" onclick="delUser('${u.username}')">🗑 Remove</button>`:`<span style="font-size:0.72rem;color:var(--muted)">You</span>`}
+  </div>`).join('')}`;
+}
+
+function openAddUser(){
+  openModal('Add User',`<div class="form-grid">
+    <div class="form-group"><label>Full Name *</label><input id="un1" placeholder="e.g. Sarah Tan"></div>
+    <div class="form-group"><label>Initials</label><input id="un2" placeholder="ST" maxlength="2"></div>
+    <div class="form-group"><label>Email</label><input id="un3" type="email"></div>
+    <div class="form-group"><label>Role</label><select id="un4"><option>Admin</option><option>Director</option></select></div>
+    <div class="form-group"><label>Username *</label><input id="un5" placeholder="e.g. sarah_st"></div>
+    <div class="form-group"><label>Password * (min 8 chars)</label><input id="un6" type="password"></div>
+  </div>`,
+  `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="addUser()">Add User</button>`);
+}
+
+function addUser(){
+  const f=v=>document.getElementById(v).value.trim();
+  if(!f('un1')||!f('un5')||!f('un6')){showToast('Name, username & password required!');return;}
+  if(f('un6').length<8){showToast('Password min 8 chars!');return;}
+  if([...USERS,...extraUsers].find(u=>u.username===f('un5'))){showToast('Username taken!');return;}
+  extraUsers.push({name:f('un1'),initials:f('un2').toUpperCase()||f('un1').charAt(0),email:f('un3'),role:f('un4'),username:f('un5'),password:f('un6')});
+  localStorage.setItem('st_users',JSON.stringify(extraUsers));
+  closeModal();nav('users');showToast('User added! ✅');
+}
+
+function delUser(username){
+  if(!confirm('Remove user?'))return;
+  extraUsers=extraUsers.filter(u=>u.username!==username);
+  localStorage.setItem('st_users',JSON.stringify(extraUsers));
+  nav('users');showToast('Removed!');
+}
+
+function openModal(title,body,foot){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=body;
+  document.getElementById('modalFoot').innerHTML=foot||'<button class="btn-sec" onclick="closeModal()">Close</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function showToast(msg){
+  document.getElementById('toastMsg').textContent=msg;
+  const t=document.getElementById('toast');t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+function today(){return new Date().toISOString().split('T')[0];}
+function isEdu(svc){return svc&&(svc.includes('School')||svc.includes('Student')||svc.includes('Education')||svc.includes('Pathway'));}
+function statusClass(s){return{New:'b-new',Contacted:'b-contacted','Proposal Sent':'b-proposal','Closed Won':'b-won','Closed Lost':'b-lost'}[s]||'b-new';}
+function candStatus(s){return{Applied:'b-applied',Shortlisted:'b-proposal','Interview Scheduled':'b-contacted',Offered:'b-enrolled',Hired:'b-won',Rejected:'b-lost'}[s]||'b-applied';}
+function stpClass(s){return{Pending:'b-pending',Applied:'b-applied',Approved:'b-approved',Rejected:'b-lost','Not Required':'b-enrolled'}[s]||'b-pending';}
+function svcOptions(){return['HR Operations Setup','Recruitment & Interview Support','Employee Onboarding','HR Policy Development','Outsourced HR Support','Work Pass Application','School Placement','Student Pass Advisory','Education Pathway Consultation','Other'].map(s=>`<option>${s}</option>`).join('');}
+function dlCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`startrust-${name}-${today()}.csv`;a.click();showToast('Exported! 📤');
+}
+function attachEvents(page){if(page==='payroll')setTimeout(calcPay,100);}
+
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+window.addEventListener('message',function(e){
+  if(e.data&&e.data.type==='new_enquiry'){
+    const d=e.data.data;
+    DB.enquiries.unshift({id:DB.nextId.e++,fname:d.fname||'',lname:d.lname||'',email:d.email||'',phone:d.phone||'',company:d.company||'',service:d.service||'General',message:d.message||'',status:'New',followup:'',notes:'',date:today()});
+    saveDB();updateBadges();showToast('New enquiry! 🎉');
+  }
+});
+</script>
+</body>
+</html>
