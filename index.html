@@ -2054,7 +2054,7 @@ async function sendAI(){
   /* Everything else → Claude AI via Netlify Function */
   addTyping();
   try{
-    const res=await fetch('https://startrust-ai.startrust-consultancy.workers.dev',{
+    const res=await fetch('https://startrust-ai.chloelu913.workers.dev',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({messages:chatHistory,system:SYSTEM_PROMPT})
