@@ -830,15 +830,25 @@ function openAddHR(){
       <div class="form-group"><label>No. of Employees</label><input id="hr5" type="number" placeholder="e.g. 15"></div>
       <div class="form-group"><label>Contract Start Date</label><input id="hr6" type="date" value="${today()}"></div>
       <div class="form-group"><label>Contract End Date</label><input id="hr8" type="date"></div>
-      <div class="form-group form-full"><label>Services & Pricing</label>
-        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem">Tick the services taken up and enter the price for each.</div>
-        <div style="display:flex;flex-direction:column;gap:0.4rem" id="hrSvcPriceList">
-          ${hrSvcs.map(s=>`<label style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem">
-            <input type="checkbox" class="hr-svc-chk" value="${s}" style="flex-shrink:0">
-            <span style="flex:1">${s}</span>
-            <span style="color:var(--muted);font-size:0.75rem">SGD</span>
-            <input type="number" class="hr-svc-price" data-svc="${s}" placeholder="0" min="0" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.78rem;outline:none">
-          </label>`).join('')}
+      <div class="form-group form-full">
+        <label>Services & Pricing</label>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Check each service and enter its price (SGD).</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+          ${hrSvcs.map(s=>`
+          <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.75rem;background:var(--bg);transition:border-color 0.15s" id="hrcard_add_${s.replace(/\s+/g,'_')}">
+            <label style="display:flex;align-items:flex-start;gap:0.5rem;cursor:pointer;margin-bottom:0.4rem">
+              <input type="checkbox" class="hr-svc-chk" value="${s}" style="margin-top:2px;flex-shrink:0" onchange="toggleHRCard(this,'add')">
+              <span style="font-size:0.8rem;font-weight:600;color:var(--slate);line-height:1.3">${s}</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:0.3rem;padding-left:1.3rem">
+              <span style="font-size:0.72rem;color:var(--muted)">SGD</span>
+              <input type="number" class="hr-svc-price" data-svc="${s}" placeholder="0" min="0"
+                style="width:100%;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.8rem;outline:none;background:white">
+            </div>
+          </div>`).join('')}
+        </div>
+        <div style="margin-top:0.75rem;padding:0.65rem 0.75rem;background:rgba(79,70,229,0.06);border-radius:8px;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700">
+          <span>Total Contract Value</span><span style="color:var(--indigo)" id="hrTotalAdd">SGD 0.00</span>
         </div>
       </div>
       <div class="form-group form-full"><label>Notes</label><textarea id="hr7"></textarea></div>
@@ -846,6 +856,21 @@ function openAddHR(){
     `<button class="btn-sec" onclick="closeModal()">Cancel</button>
      <button class="btn-primary" onclick="addHR()">Add Client</button>`
   );
+  // Live total update
+  document.querySelectorAll('.hr-svc-price').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const total=Array.from(document.querySelectorAll('.hr-svc-price')).reduce((a,i)=>a+parseFloat(i.value||0),0);
+      const el=document.getElementById('hrTotalAdd');if(el)el.textContent='SGD '+total.toLocaleString('en-SG',{minimumFractionDigits:2});
+    });
+  });
+}
+function toggleHRCard(chk,suffix){
+  const card=document.getElementById('hrcard_'+suffix+'_'+chk.value.replace(/\s+/g,'_'));
+  if(card)card.style.borderColor=chk.checked?'var(--indigo)':'var(--border)';
+}
+function updateHRTotal(){
+  const total=Array.from(document.querySelectorAll('.hr-svc-price-edit')).reduce((a,i)=>a+parseFloat(i.value||0),0);
+  const el=document.getElementById('hrTotalEdit');if(el)el.textContent='SGD '+total.toLocaleString('en-SG',{minimumFractionDigits:2});
 }
 
 function addHR(){
@@ -886,17 +911,23 @@ function viewHR(id){
       </div>
     </div>
     <div class="detail-section"><h4>💼 Services & Pricing</h4>
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem">Edit services taken up and their prices.</div>
-      <div style="display:flex;flex-direction:column;gap:0.4rem">
-        ${hrSvcs.map(s=>{const sp=svcPrices.find(x=>x.name===s);return`<label style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem">
-          <input type="checkbox" class="hr-svc-chk-edit" value="${s}" ${sp?'checked':''} style="flex-shrink:0">
-          <span style="flex:1">${s}</span>
-          <span style="color:var(--muted);font-size:0.75rem">SGD</span>
-          <input type="number" class="hr-svc-price-edit" data-svc="${s}" value="${sp?sp.price:''}" placeholder="0" min="0" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.78rem;outline:none">
-        </label>`;}).join('')}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+        ${hrSvcs.map(s=>{const sp=svcPrices.find(x=>x.name===s);return`
+        <div style="border:1px solid ${sp?'var(--indigo)':'var(--border)'};border-radius:10px;padding:0.65rem 0.75rem;background:var(--bg)" id="hrcard_edit_${s.replace(/\s+/g,'_')}">
+          <label style="display:flex;align-items:flex-start;gap:0.5rem;cursor:pointer;margin-bottom:0.4rem">
+            <input type="checkbox" class="hr-svc-chk-edit" value="${s}" ${sp?'checked':''} style="margin-top:2px;flex-shrink:0" onchange="toggleHRCard(this,'edit');updateHRTotal()">
+            <span style="font-size:0.8rem;font-weight:600;color:var(--slate);line-height:1.3">${s}</span>
+          </label>
+          <div style="display:flex;align-items:center;gap:0.3rem;padding-left:1.3rem">
+            <span style="font-size:0.72rem;color:var(--muted)">SGD</span>
+            <input type="number" class="hr-svc-price-edit" data-svc="${s}" value="${sp?sp.price:''}" placeholder="0" min="0"
+              oninput="updateHRTotal()"
+              style="width:100%;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.8rem;outline:none;background:white">
+          </div>
+        </div>`;}).join('')}
       </div>
-      <div style="margin-top:0.75rem;padding:0.65rem;background:rgba(79,70,229,0.06);border-radius:8px;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700">
-        <span>Total Contract Value</span><span style="color:var(--indigo)">SGD ${totalContract.toLocaleString('en-SG',{minimumFractionDigits:2})}</span>
+      <div style="margin-top:0.75rem;padding:0.65rem 0.75rem;background:rgba(79,70,229,0.06);border-radius:8px;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700">
+        <span>Total Contract Value</span><span style="color:var(--indigo)" id="hrTotalEdit">SGD ${totalContract.toLocaleString('en-SG',{minimumFractionDigits:2})}</span>
       </div>
     </div>
     <div class="detail-section"><h4>Notes</h4>
@@ -1795,13 +1826,30 @@ function genPayslip(){
   const patDays=get('pyLeavePaternity');
   const ccDays=get('pyLeaveChildcare');
   const type=g('pyType');
+  const typeLabel={sc:'Singapore Citizen',pr1:'PR (1st Year)',pr2:'PR (2nd Year)',pr3:'PR (3rd Year+)',ep:'Employment Pass',sp:'S Pass',wp:'Work Permit'}[type]||type;
   const rates={sc:{ee:0.20,er:0.17},pr1:{ee:0.05,er:0.04},pr2:{ee:0.15,er:0.09},pr3:{ee:0.20,er:0.17},ep:{ee:0,er:0},sp:{ee:0,er:0},wp:{ee:0,er:0}};
   const r=rates[type]||{ee:0,er:0};
   const dailyRate=workDays>0?b/workDays:0;
   const unpaidDed=Math.round(dailyRate*unpaidDays*100)/100;
   const gross=b+a+ot+bon-unpaidDed;
-  const eeCPF=Math.round(gross*r.ee*100)/100,net=gross-eeCPF-ded;
+  const eeCPF=Math.round(gross*r.ee*100)/100;
+  const erCPF=Math.round(gross*r.er*100)/100;
+  const net=Math.max(0,gross-eeCPF-ded);
   const fmt=n=>`SGD ${Math.max(0,n).toFixed(2)}`;
+
+  // MOM: pay period = first to last day of the month
+  const monthVal=g('pyMonth'); // e.g. "2026-05"
+  let periodStart='',periodEnd='',paymentDate='';
+  if(monthVal){
+    const [yr,mo]=monthVal.split('-');
+    const lastDay=new Date(parseInt(yr),parseInt(mo),0).getDate();
+    periodStart=`${yr}-${mo}-01`;
+    periodEnd=`${yr}-${mo}-${lastDay}`;
+    // MOM: payment within 7 days after period end
+    const pd=new Date(parseInt(yr),parseInt(mo),7);
+    paymentDate=pd.toISOString().split('T')[0];
+  }
+
   const leaveRows=[
     annualDays?`<tr><td>Annual Leave</td><td style="text-align:right">${annualDays} day(s)</td></tr>`:'',
     medDays?`<tr><td>Medical Leave</td><td style="text-align:right">${medDays} day(s)</td></tr>`:'',
@@ -1811,38 +1859,95 @@ function genPayslip(){
     nsDays?`<tr><td>NS (In-Camp Training)</td><td style="text-align:right">${nsDays} day(s)</td></tr>`:'',
     unpaidDays?`<tr><td>No Pay Leave (NPL)</td><td style="text-align:right">${unpaidDays} day(s)</td></tr>`:'',
   ].filter(Boolean).join('');
+
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payslip — ${g('pyName')}</title>
-  <style>body{font-family:Arial,sans-serif;max-width:600px;margin:30px auto;font-size:13px;color:#1e293b}
-  .hd{background:#0f172a;color:white;padding:18px 22px;border-radius:8px 8px 0 0}
-  .hd h1{font-size:18px;margin:0 0 2px}.hd p{font-size:10px;opacity:0.5;margin:0}
-  .bd{border:1px solid #e2e8f0;border-top:none;padding:20px 22px;border-radius:0 0 8px 8px}
-  .info{display:flex;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px dashed #e2e8f0}
-  table{width:100%;border-collapse:collapse;margin-bottom:12px}
-  th{background:#f8fafc;text-align:left;padding:7px 10px;font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em}
-  td{padding:7px 10px;border-bottom:1px solid #f8fafc}
-  .tot td{font-weight:700;font-size:14px;border-top:2px solid #e2e8f0;border-bottom:none}
-  .tot td:last-child{color:#e8567a}
-  .ft{text-align:center;font-size:10px;color:#94a3b8;margin-top:14px;padding-top:12px;border-top:1px dashed #e2e8f0}</style></head>
-  <body><div class="hd"><h1>StarTrust Consultancy</h1><p>60 Paya Lebar Road #07-54, Singapore 409051</p></div>
-  <div class="bd"><div class="info">
-    <div><strong>${g('pyName')||'Employee'}</strong><br><span style="color:#94a3b8;font-size:11px">${g('pyDesig')||''}</span></div>
-    <div style="text-align:right"><strong>PAYSLIP</strong><br><span style="font-size:11px;color:#64748b">${g('pyMonth')||''}</span></div>
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;max-width:620px;margin:30px auto;font-size:12px;color:#1e293b;line-height:1.5}
+    .hd{background:#0f172a;color:white;padding:16px 22px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:flex-start}
+    .hd-left h1{font-size:17px;margin:0 0 2px;font-weight:700}.hd-left p{font-size:9px;opacity:0.5;margin:0}
+    .hd-right{text-align:right;font-size:9px;opacity:0.6;line-height:1.6}
+    .bd{border:1px solid #e2e8f0;border-top:none;padding:16px 22px;border-radius:0 0 8px 8px}
+    .emp-row{display:flex;justify-content:space-between;background:#f8fafc;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:11px}
+    .emp-col label{font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;display:block;margin-bottom:2px}
+    .emp-col strong{color:#1e293b}
+    .period-bar{display:flex;gap:1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 14px;margin-bottom:14px;font-size:10px}
+    .period-bar span{color:#1d4ed8}
+    table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+    th{background:#f8fafc;text-align:left;padding:6px 10px;font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0}
+    td{padding:6px 10px;border-bottom:1px solid #f8fafc}
+    td:last-child{text-align:right}
+    .subtotal td{font-weight:700;background:#f8fafc;border-top:1px solid #e2e8f0}
+    .net-row td{font-weight:800;font-size:14px;border-top:2px solid #e2e8f0;border-bottom:none;padding-top:10px}
+    .net-row td:last-child{color:#e8567a}
+    .cpf-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:10px}
+    .cpf-box .cpf-title{font-weight:700;color:#166534;margin-bottom:6px;font-size:11px}
+    .cpf-row{display:flex;justify-content:space-between;color:#166534;padding:2px 0}
+    .mom-note{background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:8px 14px;font-size:9px;color:#92400e;margin-top:10px}
+    .ft{text-align:center;font-size:9px;color:#94a3b8;margin-top:12px;padding-top:10px;border-top:1px dashed #e2e8f0}
+    @media print{body{margin:0}.hd{border-radius:0}}
+  </style></head>
+  <body>
+  <div class="hd">
+    <div class="hd-left">
+      <h1>StarTrust Consultancy Pte Ltd</h1>
+      <p>60 Paya Lebar Road #07-54, Singapore 409051</p>
+      <p style="margin-top:2px">UEN: 202620412Z · admin@startrust-consultancy.com</p>
+    </div>
+    <div class="hd-right">
+      <div style="font-size:14px;font-weight:700;opacity:1">PAYSLIP</div>
+      <div>${monthVal||''}</div>
+    </div>
   </div>
-  <table><thead><tr><th>Earnings</th><th style="text-align:right">Amount</th></tr></thead><tbody>
-    <tr><td>Basic Salary</td><td style="text-align:right">${fmt(b)}</td></tr>
-    ${a?`<tr><td>Allowances</td><td style="text-align:right">${fmt(a)}</td></tr>`:''}
-    ${ot?`<tr><td>Overtime</td><td style="text-align:right">${fmt(ot)}</td></tr>`:''}
-    ${bon?`<tr><td>Bonus</td><td style="text-align:right">${fmt(bon)}</td></tr>`:''}
-  </tbody></table>
-  ${leaveRows?`<table><thead><tr><th>Leave Taken</th><th style="text-align:right">Days</th></tr></thead><tbody>${leaveRows}</tbody></table>`:''}
-  <table><thead><tr><th>Deductions</th><th style="text-align:right">Amount</th></tr></thead><tbody>
-    ${unpaidDed?`<tr><td>Unpaid Leave (${unpaidDays} days)</td><td style="text-align:right">- ${fmt(unpaidDed)}</td></tr>`:''}
-    ${eeCPF?`<tr><td>Employee CPF (${(r.ee*100).toFixed(0)}%)</td><td style="text-align:right">- ${fmt(eeCPF)}</td></tr>`:''}
-    ${ded?`<tr><td>Other Deductions</td><td style="text-align:right">- ${fmt(ded)}</td></tr>`:''}
-  </tbody></table>
-  <table><tbody class="tot"><tr><td>Net Take-Home Pay</td><td style="text-align:right">${fmt(net)}</td></tr></tbody></table>
-  <div class="ft">StarTrust Consultancy · admin@startrust-consultancy.com · +65 9853 0670<br>This payslip is computer-generated.</div>
-  </div></body></html>`;
+  <div class="bd">
+    <div class="emp-row">
+      <div class="emp-col"><label>Employee Name</label><strong>${g('pyName')||'—'}</strong></div>
+      <div class="emp-col"><label>Designation</label><strong>${g('pyDesig')||'—'}</strong></div>
+      <div class="emp-col"><label>Employment Status</label><strong>${typeLabel}</strong></div>
+      <div class="emp-col"><label>Working Days/Mth</label><strong>${workDays}</strong></div>
+    </div>
+    <div class="period-bar">
+      <div><label style="color:#64748b;font-size:9px;text-transform:uppercase;letter-spacing:0.05em">Pay Period</label><br><span>${periodStart} to ${periodEnd}</span></div>
+      <div style="margin-left:auto"><label style="color:#64748b;font-size:9px;text-transform:uppercase;letter-spacing:0.05em">Payment Date</label><br><span>${paymentDate}</span></div>
+    </div>
+
+    <table>
+      <thead><tr><th>Earnings</th><th style="text-align:right">Amount (SGD)</th></tr></thead>
+      <tbody>
+        <tr><td>Basic Salary</td><td>${fmt(b)}</td></tr>
+        ${a?`<tr><td>Allowances</td><td>${fmt(a)}</td></tr>`:''}
+        ${ot?`<tr><td>Overtime Pay</td><td>${fmt(ot)}</td></tr>`:''}
+        ${bon?`<tr><td>Bonus / Commission</td><td>${fmt(bon)}</td></tr>`:''}
+        ${unpaidDed?`<tr><td>No Pay Leave Deduction (${unpaidDays} day${unpaidDays>1?'s':''})</td><td style="color:#ef4444">- ${fmt(unpaidDed)}</td></tr>`:''}
+        <tr class="subtotal"><td>Gross Salary</td><td>${fmt(gross)}</td></tr>
+      </tbody>
+    </table>
+
+    ${leaveRows?`<table><thead><tr><th>Leave Taken This Month</th><th style="text-align:right">Days</th></tr></thead><tbody>${leaveRows}</tbody></table>`:''}
+
+    <table>
+      <thead><tr><th>Deductions</th><th style="text-align:right">Amount (SGD)</th></tr></thead>
+      <tbody>
+        ${eeCPF?`<tr><td>Employee CPF Contribution (${(r.ee*100).toFixed(0)}%)</td><td>- ${fmt(eeCPF)}</td></tr>`:'<tr><td colspan="2" style="color:#94a3b8;font-size:10px">No CPF applicable for this employment type</td></tr>'}
+        ${ded?`<tr><td>Other Deductions</td><td>- ${fmt(ded)}</td></tr>`:''}
+      </tbody>
+    </table>
+
+    <table><tbody>
+      <tr class="net-row"><td>Net Take-Home Pay</td><td>${fmt(net)}</td></tr>
+    </tbody></table>
+
+    ${erCPF>0?`<div class="cpf-box">
+      <div class="cpf-title">CPF Contributions (for employer records — not deducted from salary)</div>
+      <div class="cpf-row"><span>Employee CPF (${(r.ee*100).toFixed(0)}%)</span><span>${fmt(eeCPF)}</span></div>
+      <div class="cpf-row"><span>Employer CPF (${(r.er*100).toFixed(0)}%)</span><span>${fmt(erCPF)}</span></div>
+      <div class="cpf-row" style="font-weight:700;border-top:1px solid #bbf7d0;margin-top:4px;padding-top:4px"><span>Total CPF Payable to CPF Board</span><span>${fmt(eeCPF+erCPF)}</span></div>
+    </div>`:''}
+
+    <div class="mom-note">⚖️ This payslip is issued in accordance with the Singapore Employment Act (Cap. 91A) and MOM payslip requirements. Employees are entitled to itemised payslips within 3 working days of salary payment.</div>
+    <div class="ft">StarTrust Consultancy Pte Ltd · admin@startrust-consultancy.com · +65 9853 0670<br>This is a computer-generated payslip and does not require a signature.</div>
+  </div>
+  </body></html>`;
   const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
 }
 
