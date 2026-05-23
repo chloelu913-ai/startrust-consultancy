@@ -824,10 +824,12 @@ function openAddHR(){
   openModal('Add HR Client',`
     <div class="form-grid">
       <div class="form-group form-full"><label>Company Name *</label><input id="hr1" placeholder="Company Pte Ltd"></div>
+      <div class="form-group"><label>UEN No.</label><input id="hr9" placeholder="e.g. 202012345A"></div>
       <div class="form-group"><label>Contact Person</label><input id="hr2" placeholder="Name"></div>
       <div class="form-group"><label>Email</label><input id="hr3" type="email"></div>
       <div class="form-group"><label>Phone</label><input id="hr4"></div>
       <div class="form-group"><label>No. of Employees</label><input id="hr5" type="number" placeholder="e.g. 15"></div>
+      <div class="form-group form-full"><label>Company Address</label><input id="hr10" placeholder="e.g. 10 Anson Road #10-01, Singapore 079903"></div>
       <div class="form-group"><label>Contract Start Date</label><input id="hr6" type="date" value="${today()}"></div>
       <div class="form-group"><label>Contract End Date</label><input id="hr8" type="date"></div>
       <div class="form-group form-full">
@@ -881,8 +883,8 @@ function addHR(){
   });
   const svcs=svcPrices.map(s=>s.name);
   DB.hrclients.unshift({
-    id:DB.nextId.h++,company:f('hr1'),contactName:f('hr2'),email:f('hr3'),
-    phone:f('hr4'),employees:f('hr5'),since:f('hr6'),endDate:f('hr8'),services:svcs,svcPrices,notes:f('hr7'),status:'Active'
+    id:DB.nextId.h++,company:f('hr1'),uen:f('hr9'),contactName:f('hr2'),email:f('hr3'),
+    phone:f('hr4'),employees:f('hr5'),address:f('hr10'),since:f('hr6'),endDate:f('hr8'),services:svcs,svcPrices,notes:f('hr7'),status:'Active'
   });
   saveDB();closeModal();nav('hrclients');showToast('HR Client added!');
 }
@@ -896,10 +898,12 @@ function viewHR(id){
     <div class="detail-section"><h4>Company Info</h4>
       <div class="detail-row">
         <div class="detail-item"><label>Contact Person</label><p>${h.contactName||'—'}</p></div>
+        <div class="detail-item"><label>UEN No.</label><p>${h.uen||'—'}</p></div>
         <div class="detail-item"><label>Email</label><p>${h.email||'—'}</p></div>
         <div class="detail-item"><label>Phone</label><p>${h.phone||'—'}</p></div>
         <div class="detail-item"><label>Employees</label><p>${h.employees||'—'}</p></div>
         <div class="detail-item"><label>Client Since</label><p>${h.since||'—'}</p></div>
+        <div class="detail-item detail-full"><label>Address</label><input type="text" id="hAddress" value="${h.address||''}" placeholder="Company address" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none"></div>
         <div class="detail-item"><label>Contract End Date</label><input type="date" id="hEndDate" value="${h.endDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
         <div class="detail-item"><label>Status</label>
           <select id="hStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
@@ -938,6 +942,7 @@ function saveHR(id){
   const h=DB.hrclients.find(x=>x.id===id);if(!h)return;
   h.status=document.getElementById('hStatus').value;
   h.endDate=document.getElementById('hEndDate').value;
+  h.address=document.getElementById('hAddress').value;
   h.notes=document.getElementById('hNotes').value;
   const svcPrices=[];
   document.querySelectorAll('.hr-svc-chk-edit:checked').forEach(chk=>{
@@ -1310,6 +1315,7 @@ function openAddSchool(){
     <div class="form-group"><label>Contact Person Name</label><input id="sc8" placeholder="e.g. John Tan"></div>
     <div class="form-group"><label>Contact Email</label><input id="sc4" type="email"></div>
     <div class="form-group"><label>Phone</label><input id="sc5"></div>
+    <div class="form-group form-full"><label>School Address</label><input id="sc9" placeholder="e.g. 10 Anson Road #10-01, Singapore 079903"></div>
     <div class="form-group form-full"><label>Courses</label><input id="sc6" placeholder="Business, IT..."></div>
     <div class="form-group form-full"><label>Notes</label><textarea id="sc7"></textarea></div>
   </div>`,
@@ -1320,7 +1326,7 @@ function addSchool(){
   const f=v=>document.getElementById(v).value.trim();
   if(!f('sc1')){showToast('Name required!');return;}
   const newId=DB.schools.length?Math.max(...DB.schools.map(s=>s.id))+1:1;
-  DB.schools.push({id:newId,name:f('sc1'),type:f('sc2'),commissionRate:f('sc3'),contactPerson:f('sc8'),contact:f('sc4'),phone:f('sc5'),courses:f('sc6'),notes:f('sc7'),status:'Active'});
+  DB.schools.push({id:newId,name:f('sc1'),type:f('sc2'),commissionRate:f('sc3'),contactPerson:f('sc8'),contact:f('sc4'),phone:f('sc5'),address:f('sc9'),courses:f('sc6'),notes:f('sc7'),status:'Active'});
   saveDB();closeModal();nav('schools');showToast('School added!');
 }
 
@@ -1338,7 +1344,8 @@ function viewSchool(id){
       <div class="detail-item form-group"><label>Contact Person Name</label>${inp('scContactPerson',s.contactPerson,'e.g. John Tan')}</div>
       <div class="detail-item form-group"><label>Email</label>${inp('scEmail',s.contact,'admin@school.edu.sg')}</div>
       <div class="detail-item form-group"><label>Phone</label>${inp('scPhone',s.phone,'+65 6000 0000')}</div>
-      <div class="detail-item detail-full form-group"><label>Courses</label>${inp('scCourses',s.courses,'Business, IT...')}</div>
+      <div class="detail-item form-group"><label>Courses</label>${inp('scCourses',s.courses,'Business, IT...')}</div>
+      <div class="detail-item detail-full form-group"><label>School Address</label>${inp('scAddress',s.address,'e.g. 10 Anson Road #10-01, Singapore 079903')}</div>
       <div class="detail-item detail-full form-group"><label>Notes</label>
         <textarea id="scNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem;font-size:0.82rem;font-family:DM Sans,sans-serif;resize:vertical;min-height:80px;outline:none">${s.notes||''}</textarea>
       </div>
@@ -1358,6 +1365,7 @@ function saveSchool(id){
     if(g('scEmail'))s.contact=g('scEmail');
     if(g('scPhone'))s.phone=g('scPhone');
     if(g('scCourses'))s.courses=g('scCourses');
+    if(g('scAddress'))s.address=g('scAddress');
   }
   s.notes=document.getElementById('scNotes').value;
   saveDB();closeModal();nav('schools');showToast('Updated!');
@@ -1736,9 +1744,10 @@ function openAddEmployee(){
     <div class="form-group"><label>No. of SC/PR Children</label><input id="em7" type="number" value="0" min="0"></div>
     <div class="form-group"><label>Start Date</label><input id="em10" type="date" value="${today()}"></div>
     <div class="form-group"><label>End Date (if contract/temp)</label><input id="em11" type="date"></div>
+    <div class="form-group form-full"><label>Residential Address</label><input id="em18" placeholder="e.g. 123 Jurong West St 65 #05-01, Singapore 640123"></div>
     <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:0.75rem;font-weight:700;font-size:0.82rem;color:var(--slate)">🪪 Identification Documents</div>
     <div class="form-group"><label>NRIC No. (SC/PR)</label><input id="em12" placeholder="e.g. S1234567A"></div>
-    <div class="form-group"><label>FIN No. (EP/SP/WP/PR)</label><input id="em13" placeholder="e.g. G1234567X"></div>
+    <div class="form-group"><label>FIN No. (EP/SP/WP)</label><input id="em13" placeholder="e.g. G1234567X"></div>
     <div class="form-group"><label>Work Pass No.</label><input id="em14" placeholder="WP/SP/EP number"></div>
     <div class="form-group"><label>Work Pass Expiry</label><input id="em15" type="date"></div>
     <div class="form-group"><label>Passport No.</label><input id="em16" placeholder="e.g. A12345678"></div>
@@ -1752,7 +1761,7 @@ function addEmployee(){
   const f=id=>document.getElementById(id)?.value?.trim()||'';
   if(!f('em1')){showToast('Name required!');return;}
   if(!DB.nextId.em)DB.nextId.em=1;
-  DB.employees.push({id:DB.nextId.em++,name:f('em1'),email:f('em2'),designation:f('em3'),mode:f('em9'),empType:f('em4'),basic:parseFloat(f('em5'))||0,allowance:parseFloat(f('em6'))||0,kids:parseInt(f('em7'))||0,startDate:f('em10'),endDate:f('em11'),nric:f('em12'),fin:f('em13'),wpNo:f('em14'),wpExpiry:f('em15'),passport:f('em16'),passportExpiry:f('em17'),notes:f('em8')});
+  DB.employees.push({id:DB.nextId.em++,name:f('em1'),email:f('em2'),designation:f('em3'),mode:f('em9'),empType:f('em4'),basic:parseFloat(f('em5'))||0,allowance:parseFloat(f('em6'))||0,kids:parseInt(f('em7'))||0,startDate:f('em10'),endDate:f('em11'),address:f('em18'),nric:f('em12'),fin:f('em13'),wpNo:f('em14'),wpExpiry:f('em15'),passport:f('em16'),passportExpiry:f('em17'),notes:f('em8')});
   saveDB();closeModal();showPayTab('employees');nav('payroll');showToast('Employee added! ✅');
 }
 
@@ -1775,9 +1784,10 @@ function editEmployee(id){
     <div class="form-group"><label>No. of SC/PR Children</label>${inp('em7',e.kids,'number')}</div>
     <div class="form-group"><label>Start Date</label>${inp('em10',e.startDate,'date')}</div>
     <div class="form-group"><label>End Date</label>${inp('em11',e.endDate,'date')}</div>
+    <div class="form-group form-full"><label>Residential Address</label>${inp('em18',e.address,'text','e.g. 123 Jurong West St 65 #05-01, Singapore 640123')}</div>
     <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:0.75rem;font-weight:700;font-size:0.82rem;color:var(--slate)">🪪 Identification Documents</div>
     <div class="form-group"><label>NRIC No. (SC/PR)</label>${inp('em12',e.nric,'text','S1234567A')}</div>
-    <div class="form-group"><label>FIN No. (EP/SP/WP/PR)</label>${inp('em13',e.fin,'text','G1234567X')}</div>
+    <div class="form-group"><label>FIN No. (EP/SP/WP)</label>${inp('em13',e.fin,'text','G1234567X')}</div>
     <div class="form-group"><label>Work Pass No.</label>${inp('em14',e.wpNo,'text','WP/SP/EP number')}</div>
     <div class="form-group"><label>Work Pass Expiry ${expiryWarn(e.wpExpiry)}</label>${inp('em15',e.wpExpiry,'date')}</div>
     <div class="form-group"><label>Passport No.</label>${inp('em16',e.passport,'text','A12345678')}</div>
@@ -1800,7 +1810,7 @@ function saveEmployee(id){
   const f=fid=>document.getElementById(fid)?.value?.trim()||'';
   e.name=f('em1');e.email=f('em2');e.designation=f('em3');e.mode=f('em9');e.empType=f('em4');
   e.basic=parseFloat(f('em5'))||0;e.allowance=parseFloat(f('em6'))||0;e.kids=parseInt(f('em7'))||0;
-  e.startDate=f('em10');e.endDate=f('em11');
+  e.startDate=f('em10');e.endDate=f('em11');e.address=f('em18');
   e.nric=f('em12');e.fin=f('em13');e.wpNo=f('em14');e.wpExpiry=f('em15');
   e.passport=f('em16');e.passportExpiry=f('em17');e.notes=f('em8');
   saveDB();closeModal();nav('payroll');showToast('Employee updated! ✅');
@@ -2002,59 +2012,84 @@ function exportProjects(){
 // ══════════════════════════════════════
 function renderMyLeave(){
   const name=currentUser?.name||'';
+  const emp=DB.employees.find(e=>e.name===name);
   const myLeave=DB.leave.filter(l=>l.employee===name);
   const approved=myLeave.filter(l=>l.status==='Approved');
   const pending=myLeave.filter(l=>l.status==='Pending');
 
-  // MOM standard entitlements
+  function calcMOMLeave(startDateStr){
+    if(!startDateStr)return{annual:0,medical:0,hosp:0,eligible:false,monthsServed:0,probationDone:false,msg:'No start date set.'};
+    const start=new Date(startDateStr);
+    const now=new Date();
+    const msPerMonth=1000*60*60*24*30.44;
+    const monthsServed=Math.max(0,(now-start)/msPerMonth);
+    if(monthsServed<3)return{annual:0,medical:0,hosp:0,eligible:false,monthsServed:Math.floor(monthsServed),probationDone:false,msg:`Still in probation (${Math.floor(monthsServed)} of 3 months). Leave entitlement starts after probation.`};
+    const yearStart=new Date(now.getFullYear(),0,1);
+    const empStart=start>yearStart?start:yearStart;
+    const monthsThisYear=Math.min(12,Math.max(0,(now-empStart)/msPerMonth));
+    const annual=Math.max(1,Math.floor((14/12)*monthsThisYear));
+    const medical=Math.max(1,Math.floor((14/12)*monthsThisYear));
+    const hospExtra=monthsServed>=6?Math.floor((46/12)*monthsThisYear):0;
+    const hosp=medical+hospExtra;
+    return{annual,medical,hosp,eligible:true,monthsServed:Math.floor(monthsServed),probationDone:true,msg:''};
+  }
+
+  const ent=calcMOMLeave(emp?.startDate);
   const usedAnnual=approved.filter(l=>l.type==='Annual').reduce((a,l)=>a+parseFloat(l.days||0),0);
   const usedMedical=approved.filter(l=>l.type==='Medical').reduce((a,l)=>a+parseFloat(l.days||0),0);
   const usedHosp=approved.filter(l=>l.type==='Hospitalisation').reduce((a,l)=>a+parseFloat(l.days||0),0);
-  const ANNUAL_ENT=14,MEDICAL_ENT=14,HOSP_ENT=60;
+  const totalHospUsed=usedMedical+usedHosp; // shared pool
 
-  const balCard=(label,used,ent,color)=>`
+  const balCard=(label,used,total,color,note='')=>`
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center">
       <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.4rem">${label}</div>
-      <div style="font-size:2rem;font-weight:800;color:${color}">${Math.max(0,ent-used)}</div>
-      <div style="font-size:0.72rem;color:var(--muted)">of ${ent} days remaining</div>
+      <div style="font-size:2rem;font-weight:800;color:${total>0?color:'var(--muted)'}">${Math.max(0,total-used)}</div>
+      <div style="font-size:0.72rem;color:var(--muted)">of ${total} days remaining</div>
       <div style="height:4px;background:var(--bg);border-radius:4px;margin-top:0.5rem">
-        <div style="height:4px;background:${color};border-radius:4px;width:${Math.min(100,(used/ent)*100)}%"></div>
+        <div style="height:4px;background:${color};border-radius:4px;width:${total>0?Math.min(100,Math.round((used/total)*100)):0}%"></div>
       </div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.25rem">${used} used</div>
+      <div style="font-size:0.7rem;margin-top:0.25rem;color:${note?'var(--rose)':'var(--muted)'};">${used} used${note?` · ${note}`:''}</div>
     </div>`;
 
-  return `<div class="page-header"><div class="page-title">🌴 My Leave</div><div class="page-sub">Your leave balance and applications</div></div>
+  return `<div class="page-header"><div class="page-title">🌴 My Leave</div><div class="page-sub">MOM-compliant prorated entitlement · Probation-aware</div></div>
 
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem">
-    ${balCard('Annual Leave',usedAnnual,ANNUAL_ENT,'var(--indigo)')}
-    ${balCard('Medical Leave',usedMedical,MEDICAL_ENT,'var(--rose)')}
-    ${balCard('Hospitalisation',usedHosp,HOSP_ENT,'var(--green)')}
+  ${!emp?`<div style="background:rgba(232,86,122,0.08);border:1px solid rgba(232,86,122,0.2);border-radius:10px;padding:1rem;font-size:0.85rem;color:var(--rose);margin-bottom:1rem">⚠️ Your employee record is not set up. Ask your Director to add you under Payroll → Employees.</div>`:''}
+  ${emp&&!ent.probationDone?`<div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:10px;padding:1rem;font-size:0.85rem;color:#92400e;margin-bottom:1rem">⏳ ${ent.msg}</div>`:''}
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem">
+    ${balCard('Annual Leave',usedAnnual,ent.annual,'var(--indigo)')}
+    ${balCard('Medical Leave',usedMedical,ent.medical,'var(--rose)','MC required')}
+    ${balCard('Hospitalisation',totalHospUsed,ent.hosp,'var(--green)','Shared pool · MC required')}
   </div>
+
+  ${emp?`<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:0.75rem 1rem;font-size:0.78rem;color:var(--muted);margin-bottom:1rem;display:flex;gap:1.5rem;flex-wrap:wrap">
+    <span>📅 Started: <strong>${emp.startDate}</strong></span>
+    <span>⏱ Service: <strong>${ent.monthsServed} months</strong></span>
+    <span>💡 Hosp pool = ${ent.hosp} days (${ent.medical} outpatient + ${Math.max(0,ent.hosp-ent.medical)} additional)</span>
+  </div>`:''}
 
   <div class="toolbar" style="margin-bottom:1rem">
     <div class="toolbar-title">My Applications (${myLeave.length})${pending.length?` · <span style="color:var(--rose)">${pending.length} pending</span>`:''}</div>
     <button class="btn-primary" onclick="openAddLeave()">+ Apply Leave</button>
   </div>
 
-  ${myLeave.length?`<div class="tbl-wrap"><table><thead><tr><th>Leave Type</th><th>Period</th><th>Days</th><th>Status</th><th>Notes</th></tr></thead>
+  ${myLeave.length?`<div class="tbl-wrap"><table><thead><tr><th>Type</th><th>Period</th><th>Days</th><th>Status</th><th>MC/Doc</th><th>Notes</th></tr></thead>
   <tbody>${myLeave.map(l=>`<tr>
     <td><span class="svc ${l.type==='Annual'?'hr':l.type==='Medical'||l.type==='Hospitalisation'?'edu':'def'}">${l.type}</span></td>
     <td style="font-size:0.78rem">${l.start} → ${l.end}</td>
     <td style="font-weight:700">${l.days||'—'}</td>
     <td><span class="badge ${l.status==='Approved'?'b-won':l.status==='Rejected'?'b-lost':'b-new'}">${l.status}</span></td>
+    <td style="font-size:0.75rem;color:${l.mcSubmitted?'var(--green)':'var(--muted)'}">${l.mcSubmitted?'✅ Submitted':'—'}</td>
     <td style="font-size:0.78rem;color:var(--muted)">${l.notes||'—'}</td>
   </tr>`).join('')}</tbody></table></div>`
   :`<div class="empty-state"><div class="empty-icon">🌴</div><p>No leave applications yet</p></div>`}
 
   <div style="margin-top:1.5rem;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem">
-    <div style="font-weight:700;font-size:0.85rem;margin-bottom:1rem;color:var(--slate)">📋 MOM Leave Entitlements</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.75rem;font-size:0.78rem">
-      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--indigo)">Annual Leave</div><div style="color:var(--muted);margin-top:0.25rem">14 days/yr (StarTrust standard)</div></div>
-      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--rose)">Medical Leave</div><div style="color:var(--muted);margin-top:0.25rem">14 days outpatient/yr</div></div>
-      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--green)">Hospitalisation</div><div style="color:var(--muted);margin-top:0.25rem">60 days/yr (incl. 14 medical)</div></div>
-      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--green)">Maternity</div><div style="color:var(--muted);margin-top:0.25rem">16 wks SC/PR child, 8 wks others</div></div>
-      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--green)">Paternity</div><div style="color:var(--muted);margin-top:0.25rem">2 weeks (SC child)</div></div>
-      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--indigo)">Childcare</div><div style="color:var(--muted);margin-top:0.25rem">6 days SC child / 2 days others</div></div>
+    <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.75rem;color:var(--slate)">📋 MOM Entitlements Reference</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:0.75rem;font-size:0.78rem">
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--indigo)">Annual Leave</div><div style="color:var(--muted);margin-top:0.25rem">14 days/yr · Prorated · After 3-month probation</div></div>
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--rose)">Medical (Outpatient)</div><div style="color:var(--muted);margin-top:0.25rem">14 days/yr · MC required · Prorated</div></div>
+      <div style="background:var(--bg);padding:0.75mm;border-radius:8px;padding:0.75rem"><div style="font-weight:700;color:var(--green)">Hospitalisation</div><div style="color:var(--muted);margin-top:0.25rem">60 days total pool (14 outpatient + 46 hosp) · After 6 months · MC required</div></div>
     </div>
   </div>`;
 }
@@ -2091,20 +2126,21 @@ function renderLeave(){
   </div><div style="display:flex;gap:0.5rem">
   <button class="btn-sec" onclick="exportLeave()">📤 Export</button>
   <button class="btn-primary" onclick="openAddLeave()">+ Apply Leave</button></div></div>
-  <div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Leave Type</th><th>Period</th><th>Days</th><th>Status</th><th>Approved By</th><th>Actions</th></tr></thead>
+  <div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Leave Type</th><th>Period</th><th>Days</th><th>Status</th><th>MC/Doc</th><th>Approved By</th><th>Actions</th></tr></thead>
   <tbody>${data.length?data.map(l=>`<tr>
     <td><div class="td-name">${l.employee||'—'}</div></td>
     <td><span class="svc ${l.type==='Annual'?'hr':l.type==='Medical'?'edu':'def'}">${l.type||'—'}</span></td>
     <td><div style="font-size:0.78rem">${l.start||''} → ${l.end||''}</div></td>
     <td style="font-weight:700">${l.days||'—'}</td>
     <td><span class="badge ${l.status==='Approved'?'b-won':l.status==='Rejected'?'b-lost':l.status==='Pending'?'b-new':'b-contacted'}">${l.status||'Pending'}</span></td>
+    <td style="font-size:0.75rem;color:${l.mcSubmitted?'var(--green)':'var(--muted)'}">${(l.type==='Medical'||l.type==='Hospitalisation')?(l.mcSubmitted?'✅ Attached':'⚠️ Pending'):'—'}</td>
     <td style="font-size:0.78rem">${l.approvedBy||'—'}</td>
     <td><div class="act-row">
       ${l.status==='Pending'&&isDirector()?`<button class="act primary" onclick="approveLeave(${l.id})">✅ Approve</button><button class="act danger" onclick="rejectLeave(${l.id})">❌ Reject</button>`:''}
       <button class="act" onclick="viewLeave(${l.id})">View</button>
       ${isDirector()?`<button class="act danger" onclick="delLeave(${l.id})">🗑</button>`:''}
     </div></td>
-  </tr>`).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No leave records yet</td></tr>`}
+  </tr>`).join(''):`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">No leave records yet</td></tr>`}
   </tbody></table></div>
   <div style="margin-top:1.5rem;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem">
     <div style="font-weight:700;font-size:0.85rem;margin-bottom:1rem;color:var(--slate)">📋 Singapore Leave Entitlements (MOM)</div>
@@ -2145,9 +2181,34 @@ function openAddLeave(){
     <div class="form-group form-full" style="background:rgba(232,86,122,0.05);border:1px solid rgba(232,86,122,0.2);border-radius:8px;padding:0.75rem;font-size:0.78rem;color:var(--muted)">
       ${isDirector()?'✅ As Director, you can approve this leave directly.':'⏳ Your leave application will be submitted as <strong>Pending</strong> and the Director will be notified to approve.'}
     </div>
+    <div class="form-group form-full" id="mcUploadWrap" style="display:none;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:0.75rem">
+      <div style="font-size:0.78rem;font-weight:700;color:#92400e;margin-bottom:0.5rem">⚕️ Medical Certificate Required</div>
+      <div style="font-size:0.75rem;color:#92400e;margin-bottom:0.75rem">Medical and Hospitalisation leave requires a valid MC from a registered doctor. Upload your MC (PDF/JPG/PNG, max 2MB).</div>
+      <input type="file" id="lvMCFile" accept=".pdf,.jpg,.jpeg,.png" style="font-size:0.82rem;width:100%">
+      <div id="lvMCStatus" style="font-size:0.75rem;color:var(--muted);margin-top:0.4rem"></div>
+    </div>
   </div>`,
   `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="addLeave()">Submit Application</button>`);
-  setTimeout(()=>{if(isDirector())renderCustomLeaveList();},50);
+  setTimeout(()=>{
+    if(isDirector())renderCustomLeaveList();
+    const sel=document.getElementById('lv2');
+    const mcWrap=document.getElementById('mcUploadWrap');
+    if(sel&&mcWrap){
+      const check=()=>{const t=sel.value;mcWrap.style.display=(t==='Medical'||t==='Hospitalisation')?'block':'none';};
+      sel.addEventListener('change',check);check();
+    }
+    const mcFile=document.getElementById('lvMCFile');
+    if(mcFile){
+      mcFile.addEventListener('change',function(){
+        const f=this.files[0];
+        const status=document.getElementById('lvMCStatus');
+        if(f){
+          if(f.size>2*1024*1024){status.textContent='⚠️ File too large (max 2MB)';status.style.color='var(--rose)';this.value='';}
+          else{status.textContent=`✅ Ready to upload: ${f.name}`;status.style.color='var(--green)';}
+        }
+      });
+    }
+  },50);
 }
 function calcLeaveDays(){
   const s=document.getElementById('lv3')?.value,e=document.getElementById('lv4')?.value;
@@ -2156,13 +2217,37 @@ function calcLeaveDays(){
 function addLeave(){
   const f=id=>document.getElementById(id)?.value?.trim()||'';
   if(!f('lv1')||!f('lv3')||!f('lv4')){showToast('Employee, start & end date required!');return;}
+  const mcFile=document.getElementById('lvMCFile');
+  const leaveType=f('lv2');
+  const needsMC=(leaveType==='Medical'||leaveType==='Hospitalisation')&&!isDirector();
+  if(needsMC&&(!mcFile||!mcFile.files[0])){
+    showToast('Please upload your Medical Certificate!');return;
+  }
   if(!DB.nextId.l)DB.nextId.l=1;
   const status=isDirector()?'Approved':'Pending';
   const approvedBy=isDirector()?f('lv7'):'';
-  DB.leave.unshift({id:DB.nextId.l++,employee:f('lv1'),type:f('lv2'),start:f('lv3'),end:f('lv4'),days:f('lv6'),status,approvedBy,notes:f('lv8'),date:new Date().toISOString().split('T')[0],submittedBy:currentUser?.name||''});
-  saveDB();closeModal();nav('leave');
-  if(isDirector()){showToast('Leave approved! ✅');}
-  else{showToast('Leave submitted — pending director approval ⏳');}
+  const newId=DB.nextId.l++;
+  const leaveRecord={id:newId,employee:f('lv1'),type:leaveType,start:f('lv3'),end:f('lv4'),days:f('lv6'),status,approvedBy,notes:f('lv8'),mcSubmitted:false,date:new Date().toISOString().split('T')[0],submittedBy:currentUser?.name||''};
+
+  // Save MC attachment if provided
+  const doSave=(mcSubmitted)=>{
+    leaveRecord.mcSubmitted=mcSubmitted;
+    DB.leave.unshift(leaveRecord);
+    saveDB();closeModal();nav(isDirector()?'leave':'myleave');
+    showToast(isDirector()?'Leave approved! ✅':'Leave submitted — pending director approval ⏳');
+  };
+
+  if(mcFile&&mcFile.files[0]){
+    const file=mcFile.files[0];
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      saveAttachments('leave',newId,[{name:file.name,mime:file.type,size:formatBytes(file.size),data:ev.target.result,uploaded:today()}]);
+      doSave(true);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    doSave(false);
+  }
 }
 function approveLeave(id){
   const l=DB.leave.find(x=>x.id===id);if(!l)return;
@@ -2175,15 +2260,22 @@ function rejectLeave(id){
 }
 function viewLeave(id){
   const l=DB.leave.find(x=>x.id===id);if(!l)return;
+  const atts=getAttachments('leave',id);
+  const mcSection=`<div class="detail-item detail-full"><label>📎 Medical Certificate</label>
+    ${atts.length?renderAttachments('leave',id):`<p style="color:var(--muted);font-size:0.82rem">${l.mcSubmitted?'MC confirmed (file not uploaded digitally)':'No MC attached'}</p>`}
+    ${isDirector()&&(l.type==='Medical'||l.type==='Hospitalisation')?`<div style="margin-top:0.5rem"><label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.25rem">Upload MC on behalf of employee</label><input type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="uploadAttachment('leave',${id},this)" style="font-size:0.78rem"></div>`:''}
+  </div>`;
   openModal(`${l.employee} — ${l.type} Leave`,`<div class="detail-section"><div class="detail-row">
     <div class="detail-item"><label>Employee</label><p>${l.employee}</p></div>
     <div class="detail-item"><label>Leave Type</label><p>${l.type}</p></div>
     <div class="detail-item"><label>Start Date</label><p>${l.start}</p></div>
     <div class="detail-item"><label>End Date</label><p>${l.end}</p></div>
     <div class="detail-item"><label>Days</label><p>${l.days||'—'}</p></div>
-    <div class="detail-item"><label>Status</label><p>${l.status}</p></div>
+    <div class="detail-item"><label>Status</label><p><span class="badge ${l.status==='Approved'?'b-won':l.status==='Rejected'?'b-lost':'b-new'}">${l.status}</span></p></div>
     <div class="detail-item"><label>Approved By</label><p>${l.approvedBy||'—'}</p></div>
+    <div class="detail-item"><label>Submitted By</label><p>${l.submittedBy||l.employee}</p></div>
     <div class="detail-item detail-full"><label>Notes</label><p>${l.notes||'—'}</p></div>
+    ${(l.type==='Medical'||l.type==='Hospitalisation')?mcSection:''}
   </div></div>`);
 }
 function delLeave(id){
