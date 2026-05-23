@@ -278,6 +278,7 @@ tr:hover td{background:#fafbfc}
         <div class="nav-item" onclick="nav('hrclients')"><span class="ni">🏢</span> HR Clients</div>
         <div class="nav-item" onclick="nav('candidates')"><span class="ni">👤</span> Candidates</div>
         <div class="nav-item" onclick="nav('payroll')" id="nav-payroll"><span class="ni">💰</span> Payroll</div>
+        <div class="nav-item" onclick="nav('leave')" id="nav-leave"><span class="ni">🌴</span> Leave Tracking</div>
       </div>
       <div class="nav-section">
         <div class="nav-section-label">Education</div>
@@ -330,7 +331,8 @@ let DB = {
     {id:5,name:'James Cook University SG',type:'University',courses:'Business, Psychology, IT',contact:'admin@jcu.edu.sg',phone:'+65 6567 8901',status:'Active',commissionRate:'10%',notes:'Full Australian degree'},
     {id:6,name:'EASB',type:'Private',courses:'Hospitality, Travel, Business',contact:'admin@easb.edu.sg',phone:'+65 6678 9012',status:'Active',commissionRate:'12%',notes:'Tourism focused'}
   ],
-  nextId:{e:1,p:1,h:1,c:1,s:1}
+  leave:[],employees:[],payrollRecords:[],
+  nextId:{e:1,p:1,h:1,c:1,s:1,l:1,em:1,pr:1}
 };
 
 function loadDB(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);DB={...DB,...d};}}catch(e){}}
@@ -404,7 +406,7 @@ function nav(page){
   const main=document.getElementById('mainContent');
   const renders={
     dashboard:renderDashboard,enquiries:renderEnquiries,projects:renderProjects,
-    hrclients:renderHRClients,candidates:renderCandidates,payroll:renderPayroll,
+    hrclients:renderHRClients,candidates:renderCandidates,payroll:renderPayroll,leave:renderLeave,
     students:renderStudents,schools:renderSchools,users:renderUsers
   };
   if(renders[page])main.innerHTML=renders[page]();
@@ -531,7 +533,7 @@ function viewEnquiry(id){
       <div class="detail-row">
         <div class="detail-item"><label>Status</label>
           <select id="eStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
-            ${['New','Contacted','Proposal Sent','Closed Won','Closed Lost'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}
+            ${['New','Contacted','1st Follow Up','2nd Follow Up','Proposal Sent','Closed Won','Closed Lost'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}
           </select>
         </div>
         <div class="detail-item"><label>Follow Up Date</label><input type="date" id="eFollowup" value="${e.followup||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%"></div>
@@ -721,7 +723,10 @@ function renderHRClients(){
   </div>
   <div class="toolbar">
     <div class="toolbar-title">${data.length} clients</div>
+    <div style="display:flex;gap:0.5rem">
+    <button class="btn-sec" onclick="exportHRClients()">📤 Export</button>
     <button class="btn-primary" onclick="openAddHR()">+ Add HR Client</button>
+    </div>
   </div>
   <div class="tbl-wrap">
     <table>
@@ -828,7 +833,10 @@ function renderCandidates(){
   </div>
   <div class="toolbar">
     <div class="toolbar-title">${data.length} candidates</div>
+    <div style="display:flex;gap:0.5rem">
+    <button class="btn-sec" onclick="exportCandidates()">📤 Export</button>
     <button class="btn-primary" onclick="openAddCandidate()">+ Add Candidate</button>
+    </div>
   </div>
   <div class="tbl-wrap">
     <table>
@@ -1141,7 +1149,7 @@ function exportStudents(){
 function renderSchools(){
   const data=DB.schools;
   return `<div class="page-header"><div class="page-title">🏫 School Partners</div><div class="page-sub">Education partner database</div></div>
-  <div class="toolbar"><div class="toolbar-title">${data.length} partners</div><button class="btn-primary" onclick="openAddSchool()">+ Add School</button></div>
+  <div class="toolbar"><div class="toolbar-title">${data.length} partners</div><div style="display:flex;gap:0.5rem"><button class="btn-sec" onclick="exportSchools()">📤 Export</button><button class="btn-primary" onclick="openAddSchool()">+ Add School</button></div></div>
   <div class="tbl-wrap"><table><thead><tr><th>School</th><th>Type</th><th>Commission</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
   <tbody>${data.map(s=>`<tr>
     <td><div class="td-name">${s.name}</div><div class="td-sub">${s.courses||''}</div></td>
@@ -1176,14 +1184,19 @@ function addSchool(){
 
 function viewSchool(id){
   const s=DB.schools.find(x=>x.id===id);if(!s)return;
+  const dir=isDirector();
+  const inp=(fid,val,ph='')=>dir?`<input id="${fid}" value="${val||''}" placeholder="${ph}" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.65rem;font-size:0.82rem;font-family:DM Sans,sans-serif;outline:none">`:`<p>${val||'—'}</p>`;
+  const sel=(fid,val,opts)=>dir?`<select id="${fid}" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.65rem;font-size:0.82rem;font-family:DM Sans,sans-serif;outline:none">${opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`:`<p>${val||'—'}</p>`;
   openModal(s.name,`<div class="detail-section"><h4>Details</h4>
     <div class="detail-row">
-      <div class="detail-item"><label>Type</label><p>${s.type||'—'}</p></div>
-      <div class="detail-item"><label>Commission</label><p style="color:var(--green);font-weight:700">${s.commissionRate||'—'}</p></div>
-      <div class="detail-item"><label>Email</label><p>${s.contact||'—'}</p></div>
-      <div class="detail-item"><label>Phone</label><p>${s.phone||'—'}</p></div>
-      <div class="detail-item detail-full"><label>Courses</label><p>${s.courses||'—'}</p></div>
-      <div class="detail-item detail-full"><label>Notes</label>
+      <div class="detail-item form-group"><label>School Name</label>${inp('scName',s.name,'TMC Academy')}</div>
+      <div class="detail-item form-group"><label>Type</label>${sel('scType',s.type,['Private','University','Language School'])}</div>
+      <div class="detail-item form-group"><label>Commission Rate</label>${inp('scComm',s.commissionRate,'15%')}</div>
+      <div class="detail-item form-group"><label>Status</label>${sel('scStatus',s.status,['Active','On Hold','Inactive'])}</div>
+      <div class="detail-item form-group"><label>Email</label>${inp('scEmail',s.contact,'admin@school.edu.sg')}</div>
+      <div class="detail-item form-group"><label>Phone</label>${inp('scPhone',s.phone,'+65 6000 0000')}</div>
+      <div class="detail-item detail-full form-group"><label>Courses</label>${inp('scCourses',s.courses,'Business, IT...')}</div>
+      <div class="detail-item detail-full form-group"><label>Notes</label>
         <textarea id="scNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem;font-size:0.82rem;font-family:DM Sans,sans-serif;resize:vertical;min-height:80px;outline:none">${s.notes||''}</textarea>
       </div>
     </div></div>`,
@@ -1192,6 +1205,16 @@ function viewSchool(id){
 
 function saveSchool(id){
   const s=DB.schools.find(x=>x.id===id);if(!s)return;
+  const g=fid=>{const el=document.getElementById(fid);return el?el.value:null;};
+  if(isDirector()){
+    if(g('scName'))s.name=g('scName');
+    if(g('scType'))s.type=g('scType');
+    if(g('scComm'))s.commissionRate=g('scComm');
+    if(g('scStatus'))s.status=g('scStatus');
+    if(g('scEmail'))s.contact=g('scEmail');
+    if(g('scPhone'))s.phone=g('scPhone');
+    if(g('scCourses'))s.courses=g('scCourses');
+  }
   s.notes=document.getElementById('scNotes').value;
   saveDB();closeModal();nav('schools');showToast('Updated!');
 }
@@ -1204,17 +1227,38 @@ function delSchool(id){
 
 function renderPayroll(){
   if(!isDirector())return'<div class="empty-state"><div class="empty-icon">🔒</div><p>Director access only</p></div>';
-  return `<div class="page-header"><div class="page-title">💰 Payroll Calculator</div><div class="page-sub">Singapore CPF-compliant — SC, PR, EP, S Pass, Work Permit</div></div>
+  const curMonth=new Date().toISOString().slice(0,7);
+  const empList=DB.employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  return `<div class="page-header"><div class="page-title">💰 Payroll</div><div class="page-sub">Singapore CPF-compliant · Linked to Leave · Government-paid leave auto-calculated</div></div>
+
+  <!-- TABS -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap">
+    <button class="btn-primary" onclick="showPayTab('calc')" id="ptab-calc">🧮 Calculator</button>
+    <button class="btn-sec" onclick="showPayTab('employees')" id="ptab-employees">👥 Employees</button>
+    <button class="btn-sec" onclick="showPayTab('monthly')" id="ptab-monthly">📅 Monthly Report</button>
+    <button class="btn-sec" onclick="showPayTab('yearly')" id="ptab-yearly">📆 Yearly Report</button>
+  </div>
+
+  <!-- CALCULATOR TAB -->
+  <div id="paytab-calc">
   <div class="pay-section"><h3>👤 Employee</h3>
     <div class="pay-row">
+      <div class="pay-field"><label>Load Employee</label><select id="pyEmpSel" onchange="loadEmployee()"><option value="">— Manual entry —</option>${empList}</select></div>
       <div class="pay-field"><label>Name</label><input id="pyName" placeholder="Chloe Lu"></div>
       <div class="pay-field"><label>Designation</label><input id="pyDesig" placeholder="HR Consultant"></div>
+    </div>
+    <div class="pay-row">
       <div class="pay-field"><label>Employment Type</label><select id="pyType" onchange="calcPay()">
         <option value="sc">Singapore Citizen</option><option value="pr1">PR 1st Year</option>
         <option value="pr2">PR 2nd Year</option><option value="pr3">PR 3rd Year+</option>
         <option value="ep">Employment Pass</option><option value="sp">S Pass</option><option value="wp">Work Permit</option>
       </select></div>
+      <div class="pay-field"><label>SC/PR Children</label><input id="pyKids" type="number" value="0" min="0" oninput="calcPay()" title="Number of SC/PR children — affects government-paid leave entitlements"></div>
+      <div class="pay-field"><label>Month</label><input id="pyMonth" type="month" value="${curMonth}" onchange="autoLoadLeave()"></div>
     </div>
+  </div>
+
+  <div class="pay-section"><h3>💵 Earnings</h3>
     <div class="pay-row">
       <div class="pay-field"><label>Basic (SGD)</label><input id="pyBasic" type="number" value="0" oninput="calcPay()"></div>
       <div class="pay-field"><label>Allowances</label><input id="pyAllow" type="number" value="0" oninput="calcPay()"></div>
@@ -1222,54 +1266,408 @@ function renderPayroll(){
     </div>
     <div class="pay-row">
       <div class="pay-field"><label>Bonus</label><input id="pyBonus" type="number" value="0" oninput="calcPay()"></div>
-      <div class="pay-field"><label>Deductions</label><input id="pyDed" type="number" value="0" oninput="calcPay()"></div>
-      <div class="pay-field"><label>Month</label><input id="pyMonth" type="month" value="${new Date().toISOString().slice(0,7)}"></div>
+      <div class="pay-field"><label>Other Deductions</label><input id="pyDed" type="number" value="0" oninput="calcPay()"></div>
+      <div class="pay-field"><label>Working Days/Month</label><input id="pyWorkDays" type="number" value="26" oninput="calcPay()"></div>
     </div>
   </div>
+
+  <div class="pay-section"><h3>🌴 Leave This Month <span id="leaveAutoTag" style="font-size:0.7rem;color:var(--rose);font-weight:400"></span></h3>
+    <div class="pay-row">
+      <div class="pay-field"><label>Annual Leave Days</label><input id="pyLeaveAnnual" type="number" value="0" min="0" oninput="calcPay()" title="Paid — no deduction"></div>
+      <div class="pay-field"><label>Medical Leave Days</label><input id="pyLeaveMedical" type="number" value="0" min="0" oninput="calcPay()" title="Paid — no deduction"></div>
+      <div class="pay-field"><label>Unpaid Leave Days</label><input id="pyLeaveUnpaid" type="number" value="0" min="0" oninput="calcPay()" title="Auto-deducted from salary"></div>
+    </div>
+    <div class="pay-row">
+      <div class="pay-field"><label>Maternity Leave Days</label><input id="pyLeaveMaternity" type="number" value="0" min="0" oninput="calcPay()" title="First 8 weeks govt-paid for SC/PR child"></div>
+      <div class="pay-field"><label>Paternity Leave Days</label><input id="pyLeavePaternity" type="number" value="0" min="0" oninput="calcPay()" title="2 weeks govt-paid for SC child"></div>
+      <div class="pay-field"><label>Childcare Leave Days</label><input id="pyLeaveChildcare" type="number" value="0" min="0" oninput="calcPay()" title="6 days SC child / 2 days others"></div>
+    </div>
+    <div class="pay-row">
+      <div class="pay-field"><label>NS Leave Days</label><input id="pyLeaveNS" type="number" value="0" min="0" oninput="calcPay()" title="Govt-paid via MINDEF — employer tops up to full salary"></div>
+    </div>
+    <div id="leaveWarning" style="display:none;background:rgba(232,86,122,0.1);border:1px solid var(--rose);border-radius:8px;padding:0.75rem;font-size:0.78rem;color:var(--rose);margin-top:0.5rem"></div>
+  </div>
+
   <div class="pay-section"><h3>📊 Breakdown</h3>
     <div class="pay-result">
       <div class="pay-result-row"><span>Basic Salary</span><span id="r-basic">SGD 0.00</span></div>
       <div class="pay-result-row"><span>Allowances</span><span id="r-allow">SGD 0.00</span></div>
       <div class="pay-result-row"><span>Overtime</span><span id="r-ot">SGD 0.00</span></div>
       <div class="pay-result-row"><span>Bonus</span><span id="r-bonus">SGD 0.00</span></div>
+      <div class="pay-result-row"><span>Unpaid Leave Deduction</span><span id="r-unpaid" style="color:#fca5a5">- SGD 0.00</span></div>
       <div class="pay-result-row"><span>Gross Pay</span><span id="r-gross">SGD 0.00</span></div>
       <div class="pay-result-row"><span>Employee CPF</span><span id="r-ecpf" style="color:#fca5a5">- SGD 0.00</span></div>
-      <div class="pay-result-row"><span>Deductions</span><span id="r-ded" style="color:#fca5a5">- SGD 0.00</span></div>
+      <div class="pay-result-row"><span>Other Deductions</span><span id="r-ded" style="color:#fca5a5">- SGD 0.00</span></div>
       <div class="pay-result-row total"><span>Net Take-Home</span><span id="r-net">SGD 0.00</span></div>
       <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:0.8rem;padding-top:0.8rem">
         <div class="pay-result-row"><span style="color:rgba(255,255,255,0.4);font-size:0.75rem">Employer CPF</span><span id="r-ercpf" style="color:rgba(255,255,255,0.5)">SGD 0.00</span></div>
         <div class="pay-result-row"><span style="color:rgba(255,255,255,0.4);font-size:0.75rem">Total Cost to Company</span><span id="r-ctc" style="color:rgba(255,255,255,0.5)">SGD 0.00</span></div>
+        <div class="pay-result-row"><span style="color:rgba(255,255,255,0.4);font-size:0.75rem">Govt-Paid Leave (reimbursable)</span><span id="r-govtpaid" style="color:#86efac">SGD 0.00</span></div>
       </div>
     </div>
-    <button class="payslip-btn" onclick="genPayslip()">📄 Generate & Print Payslip</button>
+    <div style="display:flex;gap:0.75rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="payslip-btn" onclick="genPayslip()" style="flex:1">📄 Generate Payslip</button>
+      <button class="payslip-btn" onclick="savePayrollRecord()" style="flex:1;background:var(--indigo)">💾 Save to Records</button>
+      <button class="payslip-btn" onclick="exportSinglePayroll()" style="flex:1;background:#059669">📤 Export CSV</button>
+    </div>
+  </div>
+  </div>
+
+  <!-- EMPLOYEES TAB -->
+  <div id="paytab-employees" style="display:none">
+    <div class="toolbar"><div class="toolbar-title">${DB.employees.length} employees</div>
+    <div style="display:flex;gap:0.5rem">
+    <button class="btn-sec" onclick="exportEmployees()">📤 Export</button>
+    <button class="btn-primary" onclick="openAddEmployee()">+ Add Employee</button></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Mode</th><th>Type</th><th>Basic</th><th>Children</th><th>Actions</th></tr></thead>
+    <tbody>${DB.employees.length?DB.employees.map(e=>`<tr>
+      <td><div class="td-name">${e.name}</div><div class="td-sub">${e.email||''}</div></td>
+      <td>${e.designation||'—'}</td>
+      <td><span class="svc ${e.mode==='Full-Time'?'hr':e.mode==='Part-Time'?'edu':'def'}">${e.mode||'Full-Time'}</span></td>
+      <td><span class="svc hr">${e.empType||'SC'}</span></td>
+      <td style="font-weight:700">SGD ${parseFloat(e.basic||0).toLocaleString()}</td>
+      <td style="text-align:center">${e.kids||0} 👶</td>
+      <td><div class="act-row">
+        <button class="act primary" onclick="loadEmpToCalc(${e.id})">▶ Calc</button>
+        <button class="act" onclick="editEmployee(${e.id})">Edit</button>
+        <button class="act danger" onclick="delEmployee(${e.id})">🗑</button>
+      </div></td>
+    </tr>`).join(''):`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No employees yet — Add one!</td></tr>`}
+    </tbody></table></div>
+  </div>
+
+  <!-- MONTHLY REPORT TAB -->
+  <div id="paytab-monthly" style="display:none">
+    <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
+      <input type="month" id="rptMonth" value="${curMonth}" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.85rem">
+      <button class="btn-primary" onclick="renderMonthlyReport()">Generate</button>
+      <button class="btn-sec" onclick="exportMonthlyReport()">📤 Export CSV</button>
+    </div>
+    <div id="monthlyReportOut"></div>
+  </div>
+
+  <!-- YEARLY REPORT TAB -->
+  <div id="paytab-yearly" style="display:none">
+    <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
+      <select id="rptYear" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.85rem">
+        ${[2025,2026,2027].map(y=>`<option ${y===new Date().getFullYear()?'selected':''}>${y}</option>`).join('')}
+      </select>
+      <button class="btn-primary" onclick="renderYearlyReport()">Generate</button>
+      <button class="btn-sec" onclick="exportYearlyReport()">📤 Export CSV</button>
+    </div>
+    <div id="yearlyReportOut"></div>
   </div>`;
+}
+
+function showPayTab(tab){
+  ['calc','employees','monthly','yearly'].forEach(t=>{
+    const el=document.getElementById('paytab-'+t);
+    const btn=document.getElementById('ptab-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+    if(btn){btn.className=t===tab?'btn-primary':'btn-sec';}
+  });
+}
+
+function loadEmployee(){
+  const id=parseInt(document.getElementById('pyEmpSel')?.value);
+  if(!id)return;
+  const e=DB.employees.find(x=>x.id===id);if(!e)return;
+  const set=(fid,v)=>{const el=document.getElementById(fid);if(el)el.value=v;};
+  set('pyName',e.name);set('pyDesig',e.designation||'');set('pyType',e.empType||'sc');
+  set('pyBasic',e.basic||0);set('pyAllow',e.allowance||0);set('pyKids',e.kids||0);
+  autoLoadLeave();calcPay();
+}
+
+function loadEmpToCalc(id){
+  showPayTab('calc');
+  const sel=document.getElementById('pyEmpSel');
+  if(sel){sel.value=id;loadEmployee();}
+}
+
+function autoLoadLeave(){
+  const name=document.getElementById('pyName')?.value?.trim();
+  const month=document.getElementById('pyMonth')?.value;
+  if(!name||!month)return;
+  const tag=document.getElementById('leaveAutoTag');
+  const leaveThisMonth=DB.leave.filter(l=>
+    l.employee.toLowerCase()===name.toLowerCase()&&
+    l.status==='Approved'&&
+    l.start&&l.start.slice(0,7)===month
+  );
+  const sum=(type)=>leaveThisMonth.filter(l=>l.type===type).reduce((a,l)=>a+parseFloat(l.days||0),0);
+  const set=(fid,v)=>{const el=document.getElementById(fid);if(el)el.value=v;};
+  set('pyLeaveAnnual',sum('Annual'));
+  set('pyLeaveMedical',sum('Medical'));
+  set('pyLeaveUnpaid',sum('No Pay Leave (NPL)'));
+  set('pyLeaveMaternity',sum('Maternity'));
+  set('pyLeavePaternity',sum('Paternity'));
+  set('pyLeaveChildcare',sum('Childcare'));
+  set('pyLeaveNS',sum('NS (In-Camp Training)'));
+  if(tag)tag.textContent=leaveThisMonth.length?`(${leaveThisMonth.length} approved leave records auto-loaded)`:'';
+  calcPay();
 }
 
 function calcPay(){
   const get=id=>parseFloat(document.getElementById(id)?.value)||0;
   const b=get('pyBasic'),a=get('pyAllow'),ot=get('pyOT'),bon=get('pyBonus'),ded=get('pyDed');
+  const workDays=get('pyWorkDays')||26;
+  const kids=get('pyKids');
   const type=document.getElementById('pyType')?.value||'sc';
-  const gross=b+a+ot+bon;
+  const isSCPR=type==='sc'||type==='pr1'||type==='pr2'||type==='pr3';
+
+  // Leave days
+  const unpaidDays=get('pyLeaveUnpaid');
+  const maternityDays=get('pyLeaveMaternity');
+  const paternityDays=get('pyLeavePaternity');
+  const childcareDays=get('pyLeaveChildcare');
+  const nsDays=get('pyLeaveNS');
+
+  // Unpaid leave deduction (daily rate × unpaid days)
+  const dailyRate=workDays>0?b/workDays:0;
+  const unpaidDeduction=Math.round(dailyRate*unpaidDays*100)/100;
+
+  // Govt-paid leave (reimbursable)
+  let govtPaid=0;
+  if(kids>0&&isSCPR){
+    govtPaid+=Math.round(dailyRate*Math.min(maternityDays,112)*100)/100;
+    govtPaid+=Math.round(dailyRate*Math.min(paternityDays,10)*100)/100;
+    govtPaid+=Math.round(dailyRate*Math.min(childcareDays,6)*100)/100;
+  }
+  // NS — MINDEF reimburses employer for make-up pay (SC/PR males)
+  if(nsDays>0&&isSCPR){
+    govtPaid+=Math.round(dailyRate*nsDays*100)/100;
+  }
+
+  // CPF rates
   const rates={sc:{ee:0.20,er:0.17},pr1:{ee:0.05,er:0.04},pr2:{ee:0.15,er:0.09},pr3:{ee:0.20,er:0.17},ep:{ee:0,er:0},sp:{ee:0,er:0},wp:{ee:0,er:0}};
   const r=rates[type]||{ee:0,er:0};
-  const eeCPF=Math.round(gross*r.ee*100)/100,erCPF=Math.round(gross*r.er*100)/100,net=gross-eeCPF-ded;
-  const fmt=n=>`SGD ${n.toFixed(2)}`;
+  const gross=b+a+ot+bon-unpaidDeduction;
+  const eeCPF=Math.round(gross*r.ee*100)/100,erCPF=Math.round(gross*r.er*100)/100;
+  const net=gross-eeCPF-ded;
+
+  const fmt=n=>`SGD ${Math.max(0,n).toFixed(2)}`;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('r-basic',fmt(b));set('r-allow',fmt(a));set('r-ot',fmt(ot));set('r-bonus',fmt(bon));
+  set('r-unpaid',unpaidDeduction>0?`- ${fmt(unpaidDeduction)}`:'SGD 0.00');
   set('r-gross',fmt(gross));set('r-ecpf',`- ${fmt(eeCPF)}`);set('r-ded',`- ${fmt(ded)}`);
   set('r-net',fmt(net));set('r-ercpf',fmt(erCPF));set('r-ctc',fmt(gross+erCPF));
+  set('r-govtpaid',`SGD ${govtPaid.toFixed(2)}`);
+
+  // Leave warnings
+  const warn=document.getElementById('leaveWarning');
+  const warnings=[];
+  if(maternityDays>0&&kids===0)warnings.push('⚠️ Maternity leave entered but no SC/PR children recorded — govt reimbursement may not apply.');
+  if(paternityDays>0&&kids===0)warnings.push('⚠️ Paternity leave entered but no SC/PR children recorded — govt reimbursement may not apply.');
+  if(childcareDays>6&&isSCPR&&kids>0)warnings.push('⚠️ Childcare leave exceeds 6 days entitlement for SC/PR child.');
+  if(childcareDays>2&&!isSCPR)warnings.push('⚠️ Childcare leave exceeds 2 days entitlement for non-SC/PR.');
+  if(warn){warn.style.display=warnings.length?'block':'none';warn.innerHTML=warnings.join('<br>');}
+}
+
+function savePayrollRecord(){
+  const g=id=>document.getElementById(id)?.value||'';
+  const get=id=>parseFloat(document.getElementById(id)?.value)||0;
+  if(!g('pyName').trim()||!g('pyMonth')){showToast('Enter employee name and month first!');return;}
+  if(!DB.nextId.pr)DB.nextId.pr=1;
+  const workDays=get('pyWorkDays')||26;
+  const b=get('pyBasic'),a=get('pyAllow'),ot=get('pyOT'),bon=get('pyBonus'),ded=get('pyDed');
+  const unpaidDays=get('pyLeaveUnpaid');
+  const dailyRate=workDays>0?b/workDays:0;
+  const unpaidDed=Math.round(dailyRate*unpaidDays*100)/100;
+  const type=g('pyType');
+  const rates={sc:{ee:0.20,er:0.17},pr1:{ee:0.05,er:0.04},pr2:{ee:0.15,er:0.09},pr3:{ee:0.20,er:0.17},ep:{ee:0,er:0},sp:{ee:0,er:0},wp:{ee:0,er:0}};
+  const r=rates[type]||{ee:0,er:0};
+  const gross=b+a+ot+bon-unpaidDed;
+  const eeCPF=Math.round(gross*r.ee*100)/100,erCPF=Math.round(gross*r.er*100)/100,net=gross-eeCPF-ded;
+  DB.payrollRecords.push({
+    id:DB.nextId.pr++,employee:g('pyName'),designation:g('pyDesig'),empType:type,
+    month:g('pyMonth'),basic:b,allowance:a,overtime:ot,bonus:bon,otherDed:ded,
+    unpaidDays,unpaidDed,annualLeave:get('pyLeaveAnnual'),medicalLeave:get('pyLeaveMedical'),
+    maternityLeave:get('pyLeaveMaternity'),paternityLeave:get('pyLeavePaternity'),childcareLeave:get('pyLeaveChildcare'),nsLeave:get('pyLeaveNS'),
+    kids:get('pyKids'),gross,eeCPF,erCPF,net,saved:new Date().toISOString().split('T')[0]
+  });
+  saveDB();showToast('Payroll record saved! 💾');
+}
+
+function exportSinglePayroll(){
+  const g=id=>document.getElementById(id)?.value||'';
+  const rows=[['Field','Value'],['Employee',g('pyName')],['Designation',g('pyDesig')],['Month',g('pyMonth')],
+    ['Employment Type',g('pyType')],['Basic',g('pyBasic')],['Allowances',g('pyAllow')],
+    ['Overtime',g('pyOT')],['Bonus',g('pyBonus')],['Unpaid Leave Days',g('pyLeaveUnpaid')],
+    ['Annual Leave Days',g('pyLeaveAnnual')],['Medical Leave Days',g('pyLeaveMedical')],
+    ['Net Pay',document.getElementById('r-net')?.textContent||'']];
+  dlCSV(rows,`payslip-${g('pyName').replace(/\s/g,'-')}-${g('pyMonth')}`);
+}
+
+function exportEmployees(){
+  const rows=[['Name','Email','Designation','Mode','Employment Type','Basic','Allowance','SC/PR Children','Notes']];
+  DB.employees.forEach(e=>rows.push([e.name,e.email||'',e.designation||'',e.mode||'Full-Time',e.empType||'',e.basic||0,e.allowance||0,e.kids||0,e.notes||'']));
+  dlCSV(rows,'employees');
+}
+
+function renderMonthlyReport(){
+  const month=document.getElementById('rptMonth')?.value;
+  if(!month){showToast('Select a month!');return;}
+  const recs=DB.payrollRecords.filter(r=>r.month===month);
+  const out=document.getElementById('monthlyReportOut');
+  if(!recs.length){out.innerHTML='<p style="color:var(--muted);text-align:center;padding:2rem">No payroll records for this month. Save payroll entries first.</p>';return;}
+  const totGross=recs.reduce((a,r)=>a+r.gross,0);
+  const totNet=recs.reduce((a,r)=>a+r.net,0);
+  const totEeCPF=recs.reduce((a,r)=>a+r.eeCPF,0);
+  const totErCPF=recs.reduce((a,r)=>a+r.erCPF,0);
+  const totCtc=recs.reduce((a,r)=>a+(r.gross+r.erCPF),0);
+  const fmt=n=>`SGD ${parseFloat(n||0).toFixed(2)}`;
+  out.innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Type</th><th>Gross</th><th>EE CPF</th><th>ER CPF</th><th>Unpaid Ded.</th><th>Net Pay</th><th>CTC</th></tr></thead>
+  <tbody>${recs.map(r=>`<tr>
+    <td><div class="td-name">${r.employee}</div><div class="td-sub">${r.designation||''}</div></td>
+    <td><span class="svc hr">${r.empType||''}</span></td>
+    <td>${fmt(r.gross)}</td><td style="color:#fca5a5">${fmt(r.eeCPF)}</td><td style="color:#fca5a5">${fmt(r.erCPF)}</td>
+    <td style="color:#fca5a5">${r.unpaidDays?`${r.unpaidDays}d / ${fmt(r.unpaidDed)}`:'—'}</td>
+    <td style="font-weight:700;color:var(--green)">${fmt(r.net)}</td>
+    <td>${fmt(r.gross+r.erCPF)}</td>
+  </tr>`).join('')}
+  <tr style="background:rgba(79,70,229,0.08);font-weight:700">
+    <td colspan="2">TOTAL (${recs.length} employees)</td>
+    <td>${fmt(totGross)}</td><td>${fmt(totEeCPF)}</td><td>${fmt(totErCPF)}</td><td>—</td>
+    <td style="color:var(--green)">${fmt(totNet)}</td><td>${fmt(totCtc)}</td>
+  </tr></tbody></table></div>`;
+}
+
+function exportMonthlyReport(){
+  const month=document.getElementById('rptMonth')?.value||'';
+  const recs=DB.payrollRecords.filter(r=>r.month===month);
+  if(!recs.length){showToast('No records to export!');return;}
+  const rows=[['Employee','Designation','Type','Basic','Allowance','OT','Bonus','Unpaid Days','Unpaid Ded','Gross','EE CPF','ER CPF','Other Ded','Net Pay','CTC']];
+  recs.forEach(r=>rows.push([r.employee,r.designation||'',r.empType,r.basic,r.allowance,r.overtime,r.bonus,r.unpaidDays,r.unpaidDed,r.gross,r.eeCPF,r.erCPF,r.otherDed,r.net,r.gross+r.erCPF]));
+  dlCSV(rows,`payroll-monthly-${month}`);
+}
+
+function renderYearlyReport(){
+  const year=document.getElementById('rptYear')?.value;
+  if(!year){showToast('Select a year!');return;}
+  const recs=DB.payrollRecords.filter(r=>r.month&&r.month.startsWith(year));
+  const out=document.getElementById('yearlyReportOut');
+  if(!recs.length){out.innerHTML='<p style="color:var(--muted);text-align:center;padding:2rem">No payroll records for this year.</p>';return;}
+  // Group by employee
+  const byEmp={};
+  recs.forEach(r=>{
+    if(!byEmp[r.employee])byEmp[r.employee]={name:r.employee,months:0,gross:0,net:0,eeCPF:0,erCPF:0,unpaidDays:0,annualLeave:0,medicalLeave:0};
+    const e=byEmp[r.employee];
+    e.months++;e.gross+=r.gross;e.net+=r.net;e.eeCPF+=r.eeCPF;e.erCPF+=r.erCPF;
+    e.unpaidDays+=r.unpaidDays||0;e.annualLeave+=r.annualLeave||0;e.medicalLeave+=r.medicalLeave||0;
+  });
+  const fmt=n=>`SGD ${parseFloat(n||0).toFixed(2)}`;
+  out.innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Months</th><th>Total Gross</th><th>Total EE CPF</th><th>Total ER CPF</th><th>Annual Leave</th><th>Medical Leave</th><th>Unpaid Days</th><th>Total Net</th></tr></thead>
+  <tbody>${Object.values(byEmp).map(e=>`<tr>
+    <td class="td-name">${e.name}</td><td>${e.months}</td>
+    <td>${fmt(e.gross)}</td><td style="color:#fca5a5">${fmt(e.eeCPF)}</td><td style="color:#fca5a5">${fmt(e.erCPF)}</td>
+    <td>${e.annualLeave}d</td><td>${e.medicalLeave}d</td><td>${e.unpaidDays}d</td>
+    <td style="font-weight:700;color:var(--green)">${fmt(e.net)}</td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+function exportYearlyReport(){
+  const year=document.getElementById('rptYear')?.value||'';
+  const recs=DB.payrollRecords.filter(r=>r.month&&r.month.startsWith(year));
+  if(!recs.length){showToast('No records to export!');return;}
+  const rows=[['Employee','Month','Gross','EE CPF','ER CPF','Net','Annual Leave','Medical Leave','Unpaid Days','Maternity','Paternity','Childcare','NS Leave']];
+  recs.forEach(r=>rows.push([r.employee,r.month,r.gross,r.eeCPF,r.erCPF,r.net,r.annualLeave||0,r.medicalLeave||0,r.unpaidDays||0,r.maternityLeave||0,r.paternityLeave||0,r.childcareLeave||0,r.nsLeave||0]));
+  dlCSV(rows,`payroll-yearly-${year}`);
+}
+
+function openAddEmployee(){
+  openModal('Add Employee',`<div class="form-grid">
+    <div class="form-group form-full"><label>Full Name *</label><input id="em1" placeholder="Sarah Tan"></div>
+    <div class="form-group"><label>Email</label><input id="em2" type="email"></div>
+    <div class="form-group"><label>Designation</label><input id="em3" placeholder="HR Executive"></div>
+    <div class="form-group"><label>Employment Mode</label><select id="em9">
+      <option>Full-Time</option><option>Part-Time</option><option>Contract</option><option>Freelance</option><option>Hourly Rate</option>
+    </select></div>
+    <div class="form-group"><label>Employment Type</label><select id="em4">
+      <option value="sc">Singapore Citizen</option><option value="pr1">PR 1st Year</option>
+      <option value="pr2">PR 2nd Year</option><option value="pr3">PR 3rd Year+</option>
+      <option value="ep">Employment Pass</option><option value="sp">S Pass</option><option value="wp">Work Permit</option>
+    </select></div>
+    <div class="form-group"><label>Basic Salary (SGD)</label><input id="em5" type="number" value="0"></div>
+    <div class="form-group"><label>Monthly Allowance (SGD)</label><input id="em6" type="number" value="0"></div>
+    <div class="form-group"><label>No. of SC/PR Children</label><input id="em7" type="number" value="0" min="0" title="Affects govt-paid leave entitlements"></div>
+    <div class="form-group form-full"><label>Notes</label><textarea id="em8" placeholder="e.g. Part-time, contract end date..."></textarea></div>
+  </div>`,
+  `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="addEmployee()">Add Employee</button>`);
+}
+
+function addEmployee(){
+  const f=id=>document.getElementById(id)?.value?.trim()||'';
+  if(!f('em1')){showToast('Name required!');return;}
+  if(!DB.nextId.em)DB.nextId.em=1;
+  DB.employees.push({id:DB.nextId.em++,name:f('em1'),email:f('em2'),designation:f('em3'),mode:f('em9'),empType:f('em4'),basic:parseFloat(f('em5'))||0,allowance:parseFloat(f('em6'))||0,kids:parseInt(f('em7'))||0,notes:f('em8')});
+  saveDB();closeModal();showPayTab('employees');nav('payroll');showToast('Employee added! ✅');
+}
+
+function editEmployee(id){
+  const e=DB.employees.find(x=>x.id===id);if(!e)return;
+  openModal('Edit Employee',`<div class="form-grid">
+    <div class="form-group form-full"><label>Full Name *</label><input id="em1" value="${e.name}"></div>
+    <div class="form-group"><label>Email</label><input id="em2" type="email" value="${e.email||''}"></div>
+    <div class="form-group"><label>Designation</label><input id="em3" value="${e.designation||''}"></div>
+    <div class="form-group"><label>Employment Mode</label><select id="em9">
+      ${['Full-Time','Part-Time','Contract','Freelance','Hourly Rate'].map(m=>`<option ${(e.mode||'Full-Time')===m?'selected':''}>${m}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Employment Type</label><select id="em4">
+      ${['sc','pr1','pr2','pr3','ep','sp','wp'].map(v=>`<option value="${v}" ${e.empType===v?'selected':''}>${{sc:'Singapore Citizen',pr1:'PR 1st Year',pr2:'PR 2nd Year',pr3:'PR 3rd Year+',ep:'Employment Pass',sp:'S Pass',wp:'Work Permit'}[v]}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Basic Salary (SGD)</label><input id="em5" type="number" value="${e.basic||0}"></div>
+    <div class="form-group"><label>Monthly Allowance (SGD)</label><input id="em6" type="number" value="${e.allowance||0}"></div>
+    <div class="form-group"><label>No. of SC/PR Children</label><input id="em7" type="number" value="${e.kids||0}" min="0"></div>
+    <div class="form-group form-full"><label>Notes</label><textarea id="em8">${e.notes||''}</textarea></div>
+  </div>`,
+  `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="saveEmployee(${id})">Save</button>`);
+}
+
+function saveEmployee(id){
+  const e=DB.employees.find(x=>x.id===id);if(!e)return;
+  const f=fid=>document.getElementById(fid)?.value?.trim()||'';
+  e.name=f('em1');e.email=f('em2');e.designation=f('em3');e.mode=f('em9');e.empType=f('em4');
+  e.basic=parseFloat(f('em5'))||0;e.allowance=parseFloat(f('em6'))||0;e.kids=parseInt(f('em7'))||0;e.notes=f('em8');
+  saveDB();closeModal();nav('payroll');showToast('Employee updated! ✅');
+}
+
+function delEmployee(id){
+  if(!confirm('Delete employee record?'))return;
+  DB.employees=DB.employees.filter(e=>e.id!==id);
+  saveDB();nav('payroll');showToast('Deleted!');
 }
 
 function genPayslip(){
   const g=id=>document.getElementById(id)?.value||'';
-  const b=parseFloat(g('pyBasic'))||0,a=parseFloat(g('pyAllow'))||0,ot=parseFloat(g('pyOT'))||0,bon=parseFloat(g('pyBonus'))||0,ded=parseFloat(g('pyDed'))||0;
-  const type=g('pyType');const gross=b+a+ot+bon;
+  const get=id=>parseFloat(document.getElementById(id)?.value)||0;
+  const b=get('pyBasic'),a=get('pyAllow'),ot=get('pyOT'),bon=get('pyBonus'),ded=get('pyDed');
+  const workDays=get('pyWorkDays')||26;
+  const unpaidDays=get('pyLeaveUnpaid');
+  const nsDays=get('pyLeaveNS');
+  const annualDays=get('pyLeaveAnnual');
+  const medDays=get('pyLeaveMedical');
+  const matDays=get('pyLeaveMaternity');
+  const patDays=get('pyLeavePaternity');
+  const ccDays=get('pyLeaveChildcare');
+  const type=g('pyType');
   const rates={sc:{ee:0.20,er:0.17},pr1:{ee:0.05,er:0.04},pr2:{ee:0.15,er:0.09},pr3:{ee:0.20,er:0.17},ep:{ee:0,er:0},sp:{ee:0,er:0},wp:{ee:0,er:0}};
   const r=rates[type]||{ee:0,er:0};
+  const dailyRate=workDays>0?b/workDays:0;
+  const unpaidDed=Math.round(dailyRate*unpaidDays*100)/100;
+  const gross=b+a+ot+bon-unpaidDed;
   const eeCPF=Math.round(gross*r.ee*100)/100,net=gross-eeCPF-ded;
-  const fmt=n=>`SGD ${n.toFixed(2)}`;
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payslip</title>
-  <style>body{font-family:Arial,sans-serif;max-width:580px;margin:30px auto;font-size:13px;color:#1e293b}
+  const fmt=n=>`SGD ${Math.max(0,n).toFixed(2)}`;
+  const leaveRows=[
+    annualDays?`<tr><td>Annual Leave</td><td style="text-align:right">${annualDays} day(s)</td></tr>`:'',
+    medDays?`<tr><td>Medical Leave</td><td style="text-align:right">${medDays} day(s)</td></tr>`:'',
+    matDays?`<tr><td>Maternity Leave</td><td style="text-align:right">${matDays} day(s)</td></tr>`:'',
+    patDays?`<tr><td>Paternity Leave</td><td style="text-align:right">${patDays} day(s)</td></tr>`:'',
+    ccDays?`<tr><td>Childcare Leave</td><td style="text-align:right">${ccDays} day(s)</td></tr>`:'',
+    nsDays?`<tr><td>NS (In-Camp Training)</td><td style="text-align:right">${nsDays} day(s)</td></tr>`:'',
+    unpaidDays?`<tr><td>No Pay Leave (NPL)</td><td style="text-align:right">${unpaidDays} day(s)</td></tr>`:'',
+  ].filter(Boolean).join('');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payslip — ${g('pyName')}</title>
+  <style>body{font-family:Arial,sans-serif;max-width:600px;margin:30px auto;font-size:13px;color:#1e293b}
   .hd{background:#0f172a;color:white;padding:18px 22px;border-radius:8px 8px 0 0}
   .hd h1{font-size:18px;margin:0 0 2px}.hd p{font-size:10px;opacity:0.5;margin:0}
   .bd{border:1px solid #e2e8f0;border-top:none;padding:20px 22px;border-radius:0 0 8px 8px}
@@ -1291,12 +1689,14 @@ function genPayslip(){
     ${ot?`<tr><td>Overtime</td><td style="text-align:right">${fmt(ot)}</td></tr>`:''}
     ${bon?`<tr><td>Bonus</td><td style="text-align:right">${fmt(bon)}</td></tr>`:''}
   </tbody></table>
+  ${leaveRows?`<table><thead><tr><th>Leave Taken</th><th style="text-align:right">Days</th></tr></thead><tbody>${leaveRows}</tbody></table>`:''}
   <table><thead><tr><th>Deductions</th><th style="text-align:right">Amount</th></tr></thead><tbody>
+    ${unpaidDed?`<tr><td>Unpaid Leave (${unpaidDays} days)</td><td style="text-align:right">- ${fmt(unpaidDed)}</td></tr>`:''}
     ${eeCPF?`<tr><td>Employee CPF (${(r.ee*100).toFixed(0)}%)</td><td style="text-align:right">- ${fmt(eeCPF)}</td></tr>`:''}
     ${ded?`<tr><td>Other Deductions</td><td style="text-align:right">- ${fmt(ded)}</td></tr>`:''}
   </tbody></table>
   <table><tbody class="tot"><tr><td>Net Take-Home Pay</td><td style="text-align:right">${fmt(net)}</td></tr></tbody></table>
-  <div class="ft">StarTrust Consultancy · admin@startrust-consultancy.com · +65 9853 0670</div>
+  <div class="ft">StarTrust Consultancy · admin@startrust-consultancy.com · +65 9853 0670<br>This payslip is computer-generated.</div>
   </div></body></html>`;
   const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
 }
@@ -1343,6 +1743,157 @@ function delUser(username){
   nav('users');showToast('Removed!');
 }
 
+function exportHRClients(){
+  const rows=[['Company','Contact Person','Email','Phone','Employees','Services','Status','Notes']];
+  DB.hrclients.forEach(h=>rows.push([h.company||'',h.contact||'',h.email||'',h.phone||'',h.employees||'',h.services||'',h.status||'',h.notes||'']));
+  dlCSV(rows,'hr-clients');
+}
+function exportCandidates(){
+  const rows=[['Name','Email','Phone','Role Applied','HR Client','Interview Date','Status','Notes']];
+  DB.candidates.forEach(c=>rows.push([`${c.fname||''} ${c.lname||''}`.trim(),c.email||'',c.phone||'',c.role||'',c.hrclient||'',c.interviewDate||'',c.status||'',c.notes||'']));
+  dlCSV(rows,'candidates');
+}
+function exportSchools(){
+  const rows=[['School','Type','Commission','Email','Phone','Courses','Status','Notes']];
+  DB.schools.forEach(s=>rows.push([s.name||'',s.type||'',s.commissionRate||'',s.contact||'',s.phone||'',s.courses||'',s.status||'',s.notes||'']));
+  dlCSV(rows,'school-partners');
+}
+function exportLeave(){
+  const rows=[['Employee','Leave Type','Start Date','End Date','Days','Status','Approved By','Notes']];
+  DB.leave.forEach(l=>rows.push([l.employee||'',l.type||'',l.start||'',l.end||'',l.days||'',l.status||'',l.approvedBy||'',l.notes||'']));
+  dlCSV(rows,'leave-records');
+}
+
+// ══════════════════════════════════════
+// LEAVE TRACKING
+// ══════════════════════════════════════
+function renderLeave(){
+  const data=DB.leave;
+  const pending=data.filter(l=>l.status==='Pending').length;
+  return `<div class="page-header"><div class="page-title">🌴 Leave Tracking</div><div class="page-sub">Singapore MOM-compliant — Annual, Medical, Maternity, Paternity & more</div></div>
+  <div class="toolbar"><div class="toolbar-title">${data.length} records${pending?` · <span style="color:var(--rose)">${pending} pending</span>`:''}
+  </div><div style="display:flex;gap:0.5rem">
+  <button class="btn-sec" onclick="exportLeave()">📤 Export</button>
+  <button class="btn-primary" onclick="openAddLeave()">+ Apply Leave</button></div></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Leave Type</th><th>Period</th><th>Days</th><th>Status</th><th>Approved By</th><th>Actions</th></tr></thead>
+  <tbody>${data.length?data.map(l=>`<tr>
+    <td><div class="td-name">${l.employee||'—'}</div></td>
+    <td><span class="svc ${l.type==='Annual'?'hr':l.type==='Medical'?'edu':'def'}">${l.type||'—'}</span></td>
+    <td><div style="font-size:0.78rem">${l.start||''} → ${l.end||''}</div></td>
+    <td style="font-weight:700">${l.days||'—'}</td>
+    <td><span class="badge ${l.status==='Approved'?'b-won':l.status==='Rejected'?'b-lost':l.status==='Pending'?'b-new':'b-contacted'}">${l.status||'Pending'}</span></td>
+    <td style="font-size:0.78rem">${l.approvedBy||'—'}</td>
+    <td><div class="act-row">
+      ${l.status==='Pending'&&isDirector()?`<button class="act primary" onclick="approveLeave(${l.id})">✅ Approve</button><button class="act danger" onclick="rejectLeave(${l.id})">❌ Reject</button>`:''}
+      <button class="act" onclick="viewLeave(${l.id})">View</button>
+      ${isDirector()?`<button class="act danger" onclick="delLeave(${l.id})">🗑</button>`:''}
+    </div></td>
+  </tr>`).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No leave records yet</td></tr>`}
+  </tbody></table></div>
+  <div style="margin-top:1.5rem;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem">
+    <div style="font-weight:700;font-size:0.85rem;margin-bottom:1rem;color:var(--slate)">📋 Singapore Leave Entitlements (MOM)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.75rem;font-size:0.78rem">
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--indigo)">Annual Leave</div><div style="color:var(--muted);margin-top:0.25rem">7–14 days (based on years of service)</div></div>
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--rose)">Medical Leave</div><div style="color:var(--muted);margin-top:0.25rem">14 days outpatient / 60 days hospitalisation</div></div>
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--green)">Maternity Leave</div><div style="color:var(--muted);margin-top:0.25rem">16 weeks (SC/PR child) / 8 weeks others</div></div>
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--green)">Paternity Leave</div><div style="color:var(--muted);margin-top:0.25rem">2 weeks (SC child)</div></div>
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--indigo)">Childcare Leave</div><div style="color:var(--muted);margin-top:0.25rem">6 days/yr (child under 7, SC) / 2 days others</div></div>
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:var(--muted)">Unpaid Leave</div><div style="color:var(--muted);margin-top:0.25rem">By mutual agreement</div></div>
+      <div style="background:var(--bg);padding:0.75rem;border-radius:8px"><div style="font-weight:700;color:#8b5cf6">NS (In-Camp Training)</div><div style="color:var(--muted);margin-top:0.25rem">Employer pays full salary; MINDEF reimburses via make-up pay claim</div></div>
+    </div>
+  </div>`;
+}
+function openAddLeave(){
+  openModal('Apply Leave',`<div class="form-grid">
+    <div class="form-group form-full"><label>Employee Name *</label><input id="lv1" placeholder="e.g. Sarah Tan"></div>
+    <div class="form-group"><label>Leave Type *</label><select id="lv2">
+      <option>Annual</option><option>Medical</option><option>Maternity</option><option>Paternity</option>
+      <option>Childcare</option><option>NS (In-Camp Training)</option><option>Compassionate</option><option>No Pay Leave (NPL)</option><option>Other</option>
+    </select>
+    <div id="customLeaveTypeWrap" style="display:none;margin-top:0.5rem">
+      <label style="font-size:0.78rem;color:var(--muted)">Custom leave types (Director)</label>
+      <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
+        <input id="newLeaveTypeName" placeholder="e.g. Birthday Leave" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.65rem;font-size:0.82rem">
+        <button class="btn-primary" onclick="addCustomLeaveType()" style="padding:0.4rem 0.75rem;font-size:0.78rem">+ Add</button>
+      </div>
+      <div id="customLeaveTypeList" style="margin-top:0.5rem;font-size:0.78rem;color:var(--muted)"></div>
+    </div>
+    </select></div>
+    <div class="form-group"><label>Status</label><select id="lv5">
+      <option>Pending</option><option>Approved</option><option>Rejected</option>
+    </select></div>
+    <div class="form-group"><label>Start Date *</label><input id="lv3" type="date"></div>
+    <div class="form-group"><label>End Date *</label><input id="lv4" type="date" onchange="calcLeaveDays()"></div>
+    <div class="form-group"><label>No. of Days</label><input id="lv6" type="number" min="0.5" step="0.5" placeholder="Auto-calculated"></div>
+    <div class="form-group"><label>Approved By</label><input id="lv7" placeholder="e.g. Chloe Lu"></div>
+    <div class="form-group form-full"><label>Notes</label><textarea id="lv8" placeholder="Medical cert ref, reason, etc."></textarea></div>
+  </div>`,
+  `<button class="btn-sec" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="addLeave()">Add Record</button>`);
+  setTimeout(initLeaveModal,50);
+}
+function calcLeaveDays(){
+  const s=document.getElementById('lv3')?.value,e=document.getElementById('lv4')?.value;
+  if(s&&e){const d=Math.round((new Date(e)-new Date(s))/(1000*60*60*24))+1;if(d>0)document.getElementById('lv6').value=d;}
+}
+function addLeave(){
+  const f=id=>document.getElementById(id)?.value?.trim()||'';
+  if(!f('lv1')||!f('lv3')||!f('lv4')){showToast('Employee, start & end date required!');return;}
+  if(!DB.nextId.l)DB.nextId.l=1;
+  DB.leave.unshift({id:DB.nextId.l++,employee:f('lv1'),type:f('lv2'),start:f('lv3'),end:f('lv4'),days:f('lv6'),status:f('lv5'),approvedBy:f('lv7'),notes:f('lv8'),date:new Date().toISOString().split('T')[0]});
+  saveDB();closeModal();nav('leave');showToast('Leave record added! 🌴');
+}
+function approveLeave(id){
+  const l=DB.leave.find(x=>x.id===id);if(!l)return;
+  l.status='Approved';l.approvedBy=currentUser?.name||'Director';
+  saveDB();nav('leave');showToast('Leave approved! ✅');
+}
+function rejectLeave(id){
+  const l=DB.leave.find(x=>x.id===id);if(!l)return;
+  l.status='Rejected';saveDB();nav('leave');showToast('Leave rejected!');
+}
+function viewLeave(id){
+  const l=DB.leave.find(x=>x.id===id);if(!l)return;
+  openModal(`${l.employee} — ${l.type} Leave`,`<div class="detail-section"><div class="detail-row">
+    <div class="detail-item"><label>Employee</label><p>${l.employee}</p></div>
+    <div class="detail-item"><label>Leave Type</label><p>${l.type}</p></div>
+    <div class="detail-item"><label>Start Date</label><p>${l.start}</p></div>
+    <div class="detail-item"><label>End Date</label><p>${l.end}</p></div>
+    <div class="detail-item"><label>Days</label><p>${l.days||'—'}</p></div>
+    <div class="detail-item"><label>Status</label><p>${l.status}</p></div>
+    <div class="detail-item"><label>Approved By</label><p>${l.approvedBy||'—'}</p></div>
+    <div class="detail-item detail-full"><label>Notes</label><p>${l.notes||'—'}</p></div>
+  </div></div>`);
+}
+function delLeave(id){
+  if(!confirm('Delete leave record?'))return;
+  DB.leave=DB.leave.filter(l=>l.id!==id);
+  saveDB();nav('leave');showToast('Deleted!');
+}
+function addCustomLeaveType(){
+  const name=document.getElementById('newLeaveTypeName')?.value?.trim();
+  if(!name){showToast('Enter a leave type name!');return;}
+  const custom=JSON.parse(localStorage.getItem('st_leave_types')||'[]');
+  if(custom.includes(name)){showToast('Already exists!');return;}
+  custom.push(name);localStorage.setItem('st_leave_types',JSON.stringify(custom));
+  const sel=document.getElementById('lv2');
+  if(sel){const opt=document.createElement('option');opt.textContent=name;sel.appendChild(opt);sel.value=name;}
+  document.getElementById('newLeaveTypeName').value='';
+  renderCustomLeaveList();showToast(`"${name}" added! ✅`);
+}
+function renderCustomLeaveList(){
+  const custom=JSON.parse(localStorage.getItem('st_leave_types')||'[]');
+  const list=document.getElementById('customLeaveTypeList');
+  if(!list)return;
+  list.innerHTML=custom.length?custom.map(t=>`<span style="display:inline-flex;align-items:center;gap:0.3rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.5rem;margin:0.15rem">${t}<span onclick="delCustomLeaveType('${t}')" style="cursor:pointer;color:var(--rose);margin-left:0.2rem">✕</span></span>`).join(''):'No custom types yet.';
+  const sel=document.getElementById('lv2');
+  if(sel){custom.forEach(t=>{if(![...sel.options].find(o=>o.value===t)){const opt=document.createElement('option');opt.textContent=t;sel.appendChild(opt);}});}
+}
+function delCustomLeaveType(name){
+  let custom=JSON.parse(localStorage.getItem('st_leave_types')||'[]');
+  custom=custom.filter(t=>t!==name);
+  localStorage.setItem('st_leave_types',JSON.stringify(custom));
+  renderCustomLeaveList();showToast(`"${name}" removed!`);
+}
 function openModal(title,body,foot){
   document.getElementById('modalTitle').textContent=title;
   document.getElementById('modalBody').innerHTML=body;

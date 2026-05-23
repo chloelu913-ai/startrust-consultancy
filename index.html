@@ -1778,7 +1778,7 @@ document.getElementById('contactForm').addEventListener('submit',async function(
       // Save to CRM localStorage so crm.html can pick it up
       try{
         const fd=new FormData(document.getElementById('contactForm'));
-        const entry={id:Date.now(),fname:fd.get('fname')||'',lname:fd.get('lname')||'',email:fd.get('email')||'',phone:fd.get('phone')||'',company:fd.get('company')||'',service:fd.get('service')||'General',message:fd.get('message')||'',status:'New',followup:'',notes:'',date:new Date().toISOString().split('T')[0]};
+        const entry={id:Date.now(),fname:fd.get('First Name')||'',lname:fd.get('Last Name')||'',email:fd.get('email')||'',phone:fd.get('Phone / WhatsApp')||'',company:fd.get('Company Name')||'',service:fd.get('Service')||'General',message:fd.get('Message')||'',status:'New',followup:'',notes:'',date:new Date().toISOString().split('T')[0]};
         const existing=JSON.parse(localStorage.getItem('st_web_enquiries')||'[]');
         existing.unshift(entry);
         localStorage.setItem('st_web_enquiries',JSON.stringify(existing));
