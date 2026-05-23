@@ -832,19 +832,17 @@ function openAddHR(){
       <div class="form-group"><label>Contract End Date</label><input id="hr8" type="date"></div>
       <div class="form-group form-full">
         <label>Services & Pricing</label>
-        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Check each service and enter its price (SGD).</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
-          ${hrSvcs.map(s=>`
-          <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.75rem;background:var(--bg);transition:border-color 0.15s" id="hrcard_add_${s.replace(/\s+/g,'_')}">
-            <label style="display:flex;align-items:flex-start;gap:0.5rem;cursor:pointer;margin-bottom:0.4rem">
-              <input type="checkbox" class="hr-svc-chk" value="${s}" style="margin-top:2px;flex-shrink:0" onchange="toggleHRCard(this,'add')">
-              <span style="font-size:0.8rem;font-weight:600;color:var(--slate);line-height:1.3">${s}</span>
-            </label>
-            <div style="display:flex;align-items:center;gap:0.3rem;padding-left:1.3rem">
-              <span style="font-size:0.72rem;color:var(--muted)">SGD</span>
-              <input type="number" class="hr-svc-price" data-svc="${s}" placeholder="0" min="0"
-                style="width:100%;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.8rem;outline:none;background:white">
-            </div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Tick each service taken up and enter its price.</div>
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:2rem 1fr 120px;background:var(--bg);padding:0.5rem 0.75rem;font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)">
+            <span></span><span>Service</span><span style="text-align:right">Price (SGD)</span>
+          </div>
+          ${hrSvcs.map((s,i)=>`
+          <div style="display:grid;grid-template-columns:2rem 1fr 120px;align-items:center;padding:0.55rem 0.75rem;border-bottom:${i<hrSvcs.length-1?'1px solid var(--border)':'none'};background:white" id="hrcard_add_${s.replace(/\s+/g,'_')}">
+            <input type="checkbox" class="hr-svc-chk" value="${s}" onchange="toggleHRCard(this,'add')" style="cursor:pointer;width:15px;height:15px">
+            <span style="font-size:0.82rem;color:var(--slate);padding:0 0.5rem">${s}</span>
+            <input type="number" class="hr-svc-price" data-svc="${s}" placeholder="0" min="0"
+              style="width:100%;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.82rem;outline:none;text-align:right">
           </div>`).join('')}
         </div>
         <div style="margin-top:0.75rem;padding:0.65rem 0.75rem;background:rgba(79,70,229,0.06);border-radius:8px;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700">
@@ -911,19 +909,17 @@ function viewHR(id){
       </div>
     </div>
     <div class="detail-section"><h4>💼 Services & Pricing</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
-        ${hrSvcs.map(s=>{const sp=svcPrices.find(x=>x.name===s);return`
-        <div style="border:1px solid ${sp?'var(--indigo)':'var(--border)'};border-radius:10px;padding:0.65rem 0.75rem;background:var(--bg)" id="hrcard_edit_${s.replace(/\s+/g,'_')}">
-          <label style="display:flex;align-items:flex-start;gap:0.5rem;cursor:pointer;margin-bottom:0.4rem">
-            <input type="checkbox" class="hr-svc-chk-edit" value="${s}" ${sp?'checked':''} style="margin-top:2px;flex-shrink:0" onchange="toggleHRCard(this,'edit');updateHRTotal()">
-            <span style="font-size:0.8rem;font-weight:600;color:var(--slate);line-height:1.3">${s}</span>
-          </label>
-          <div style="display:flex;align-items:center;gap:0.3rem;padding-left:1.3rem">
-            <span style="font-size:0.72rem;color:var(--muted)">SGD</span>
-            <input type="number" class="hr-svc-price-edit" data-svc="${s}" value="${sp?sp.price:''}" placeholder="0" min="0"
-              oninput="updateHRTotal()"
-              style="width:100%;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.8rem;outline:none;background:white">
-          </div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:2rem 1fr 120px;background:var(--bg);padding:0.5rem 0.75rem;font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)">
+          <span></span><span>Service</span><span style="text-align:right">Price (SGD)</span>
+        </div>
+        ${hrSvcs.map((s,i)=>{const sp=svcPrices.find(x=>x.name===s);return`
+        <div style="display:grid;grid-template-columns:2rem 1fr 120px;align-items:center;padding:0.55rem 0.75rem;border-bottom:${i<hrSvcs.length-1?'1px solid var(--border)':'none'};background:${sp?'rgba(79,70,229,0.03)':'white'}">
+          <input type="checkbox" class="hr-svc-chk-edit" value="${s}" ${sp?'checked':''} onchange="updateHRTotal()" style="cursor:pointer;width:15px;height:15px">
+          <span style="font-size:0.82rem;color:var(--slate);padding:0 0.5rem;font-weight:${sp?'600':'400'}">${s}</span>
+          <input type="number" class="hr-svc-price-edit" data-svc="${s}" value="${sp?sp.price:''}" placeholder="0" min="0"
+            oninput="updateHRTotal()"
+            style="width:100%;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.82rem;outline:none;text-align:right">
         </div>`;}).join('')}
       </div>
       <div style="margin-top:0.75rem;padding:0.65rem 0.75rem;background:rgba(79,70,229,0.06);border-radius:8px;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700">
