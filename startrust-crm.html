@@ -432,7 +432,6 @@ function loadDB(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse
 function saveDB(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 loadDB();
 
-// ── Pull in enquiries submitted from the website contact form ──
 function syncWebEnquiries(){
   try{
     const web=JSON.parse(localStorage.getItem('st_web_enquiries')||'[]');
@@ -588,7 +587,7 @@ function renderEnquiries(filter=''){
     <div class="toolbar-title">${data.length} enquiries</div>
     <div class="search-wrap">🔍 <input id="enqSearch" placeholder="Search..." oninput="filterEnq()"></div>
     ${isDirector()?`<div style="display:flex;gap:0.5rem">
-      <button class="btn-sec" onclick="syncWeb3Forms()">📋 Form Sync</button>
+      <button class="btn-sec" onclick="syncWeb3Forms()">📥 Import from Email</button>
       <button class="btn-primary" onclick="openAddEnquiry()">+ Add Enquiry</button>
     </div>`:''}
     ${isDirector()?`<button class="btn-sec" onclick="exportEnquiries()">📤 Export</button>`:''}
@@ -721,23 +720,58 @@ function showFormspreeHelp(){
 }
 
 function syncWeb3Forms(){
-  openModal('About Form Sync',`
-    <div style="font-size:0.85rem;line-height:1.7;color:var(--slate)">
-      <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:0.75rem;margin-bottom:1rem">
-        <strong>API sync requires Web3Forms paid plan.</strong><br>
-        The free plan sends email notifications only — it does not allow reading submissions via API.
+  openModal('📥 Import Enquiry from Email',`
+    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;background:rgba(79,70,229,0.06);border-radius:8px;padding:0.75rem">
+      💡 When you receive a Web3Forms email notification, paste the details below to add to CRM instantly. No API needed!
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>First Name *</label><input id="imp1" placeholder="e.g. Ken"></div>
+      <div class="form-group"><label>Last Name</label><input id="imp2" placeholder="e.g. Chen"></div>
+      <div class="form-group"><label>Email *</label><input id="imp3" type="email" placeholder="chenzj96@gmail.com"></div>
+      <div class="form-group"><label>Phone / WhatsApp</label>
+        <div style="display:flex;gap:0.5rem">
+          <select id="imp4cc" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem;font-size:0.82rem;outline:none;width:110px">
+            <option value="+65">🇸🇬 +65</option>
+            <option value="+60">🇲🇾 +60</option>
+            <option value="+62">🇮🇩 +62</option>
+            <option value="+63">🇵🇭 +63</option>
+            <option value="+66">🇹🇭 +66</option>
+            <option value="+84">🇻🇳 +84</option>
+            <option value="+86">🇨🇳 +86</option>
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="">Other</option>
+          </select>
+          <input id="imp4" placeholder="9xxx xxxx" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.82rem;outline:none">
+        </div>
       </div>
-      <p style="margin-bottom:0.75rem"><strong>Your current flow (working fine):</strong></p>
-      <ol style="padding-left:1.2rem;color:var(--muted);margin-bottom:1rem">
-        <li>Client submits form on your website</li>
-        <li>You receive email at admin@startrust-consultancy.com</li>
-        <li>Enquiry auto-appears in CRM if submitted from same browser</li>
-        <li>For cross-device submissions — click <strong>+ Add Enquiry</strong> and enter details from email</li>
-      </ol>
-      <div style="background:rgba(79,70,229,0.06);border-radius:8px;padding:0.75rem;font-size:0.78rem;color:var(--muted)">
-        To enable full auto-sync, upgrade Web3Forms to paid plan (USD $10/mth).
-      </div>
-    </div>`);
+      <div class="form-group"><label>Company</label><input id="imp5" placeholder="Company name or N/A"></div>
+      <div class="form-group"><label>Service</label><select id="imp6">${svcOptions()}</select></div>
+      <div class="form-group"><label>Submission Date</label><input id="imp7" type="date" value="${today()}"></div>
+      <div class="form-group form-full"><label>Message</label><textarea id="imp8" placeholder="Paste message from email..." style="min-height:80px"></textarea></div>
+    </div>`,
+    `<button class="btn-sec" onclick="closeModal()">Cancel</button>
+     <button class="btn-primary" onclick="importFromEmail()">Add to CRM</button>`
+  );
+}
+
+function importFromEmail(){
+  const f=v=>document.getElementById(v)?.value?.trim()||'';
+  if(!f('imp1')||!f('imp3')){showToast('First name and email required!');return;}
+  const cc=f('imp4cc');
+  const num=f('imp4').replace(/\s/g,'');
+  const phone=num?(cc+num):cc;
+  DB.enquiries.unshift({
+    id:DB.nextId.e++,
+    fname:f('imp1'),lname:f('imp2'),email:f('imp3'),
+    phone,company:f('imp5'),service:f('imp6'),
+    message:f('imp8'),status:'New',followup:'',
+    notes:'[Imported from Web3Forms email]',
+    date:f('imp7')||today()
+  });
+  saveDB();updateBadges();closeModal();nav('enquiries');
+  showToast('Enquiry imported successfully! ✅');
 }
 
 function openAddEnquiry(){
@@ -746,7 +780,18 @@ function openAddEnquiry(){
       <div class="form-group"><label>First Name *</label><input id="af1" placeholder="e.g. John"></div>
       <div class="form-group"><label>Last Name</label><input id="af2" placeholder="e.g. Tan"></div>
       <div class="form-group"><label>Email *</label><input id="af3" type="email" placeholder="john@example.com"></div>
-      <div class="form-group"><label>Phone / WhatsApp</label><input id="af4" placeholder="+65 9xxx xxxx"></div>
+      <div class="form-group"><label>Phone / WhatsApp</label>
+        <div style="display:flex;gap:0.5rem">
+          <select id="af4cc" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem;font-size:0.82rem;outline:none;width:110px">
+            <option value="+65">🇸🇬 +65</option><option value="+60">🇲🇾 +60</option>
+            <option value="+62">🇮🇩 +62</option><option value="+63">🇵🇭 +63</option>
+            <option value="+66">🇹🇭 +66</option><option value="+84">🇻🇳 +84</option>
+            <option value="+86">🇨🇳 +86</option><option value="+91">🇮🇳 +91</option>
+            <option value="+44">🇬🇧 +44</option><option value="+1">🇺🇸 +1</option>
+          </select>
+          <input id="af4" placeholder="9xxx xxxx" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.82rem;outline:none">
+        </div>
+      </div>
       <div class="form-group"><label>Company</label><input id="af5" placeholder="Company Pte Ltd / N/A"></div>
       <div class="form-group"><label>Service</label><select id="af6">${svcOptions()}</select></div>
       <div class="form-group form-full"><label>Message</label><textarea id="af7" placeholder="Client's enquiry..."></textarea></div>
@@ -759,9 +804,12 @@ function openAddEnquiry(){
 function addEnquiry(){
   const f=v=>document.getElementById(v).value.trim();
   if(!f('af1')||!f('af3')){showToast('Name and email required!');return;}
+  const cc=document.getElementById('af4cc')?.value||'+65';
+  const num=f('af4').replace(/\s/g,'');
+  const phone=num?(cc+num):'';
   DB.enquiries.unshift({
     id:DB.nextId.e++,fname:f('af1'),lname:f('af2'),email:f('af3'),
-    phone:f('af4'),company:f('af5'),service:f('af6'),message:f('af7'),
+    phone,company:f('af5'),service:f('af6'),message:f('af7'),
     status:'New',followup:'',notes:'',date:today()
   });
   saveDB();updateBadges();closeModal();nav('enquiries');showToast('Enquiry added! 🎉');
@@ -1101,68 +1149,174 @@ function delHR(id){
 // ══════════════════════════════════════
 function renderCandidates(){
   const data=DB.candidates;
-  return `
-  <div class="page-header">
-    <div class="page-title">👤 Candidates</div>
-    <div class="page-sub">Track candidates and their resumes</div>
+  const stages=['Applied','Shortlisted','Interview Scheduled','Interview Done','Offered','Hired','Rejected','Withdrawn'];
+  const stageColor={Applied:'b-new',Shortlisted:'b-contacted',
+    'Interview Scheduled':'b-proposal','Interview Done':'b-proposal',
+    Offered:'b-won',Hired:'b-won',Rejected:'b-lost',Withdrawn:'b-lost'};
+
+  const pipeCount=s=>data.filter(c=>c.status===s).length;
+
+  return `<div class="page-header">
+    <div class="page-title">👤 Candidate ATS</div>
+    <div class="page-sub">Full application tracking · Resume upload · Duplicate detection</div>
   </div>
+
+  <!-- Pipeline summary -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap">
+    ${stages.map(s=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.85rem;text-align:center;min-width:80px">
+      <div style="font-size:1.2rem;font-weight:800;color:var(--indigo)">${pipeCount(s)}</div>
+      <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em">${s}</div>
+    </div>`).join('')}
+  </div>
+
   <div class="toolbar">
     <div class="toolbar-title">${data.length} candidates</div>
-    <div style="display:flex;gap:0.5rem">
-    <button class="btn-sec" onclick="exportCandidates()">📤 Export</button>
-    <button class="btn-primary" onclick="openAddCandidate()">+ Add Candidate</button>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <select id="candFilter" onchange="nav('candidates')" style="border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.75rem;font-size:0.82rem;outline:none">
+        <option value="">All Stages</option>
+        ${stages.map(s=>`<option value="${s}">${s}</option>`).join('')}
+      </select>
+      <button class="btn-sec" onclick="exportCandidates()">📤 Export</button>
+      <button class="btn-primary" onclick="openAddCandidate()">+ Add Candidate</button>
     </div>
   </div>
-  <div class="tbl-wrap">
-    <table>
-      <thead><tr><th>Candidate</th><th>Role Applied</th><th>HR Client</th><th>Interview Date</th><th>Status</th><th>Resume</th><th>Actions</th></tr></thead>
-      <tbody>${data.length?data.map(c=>`<tr>
-        <td><div class="td-name">${c.name}</div><div class="td-sub">${c.email||''}</div></td>
-        <td style="font-size:0.82rem">${c.role||'—'}</td>
-        <td style="font-size:0.82rem">${c.hrClient||'—'}</td>
-        <td style="font-size:0.78rem;color:var(--muted)">${c.interviewDate||'—'}</td>
-        <td><span class="badge ${candStatus(c.status)}">${c.status||'Applied'}</span></td>
-        <td>${c.resumeUrl?`<a href="${c.resumeUrl}" target="_blank" style="color:var(--indigo);font-size:0.78rem;font-weight:600">📄 View</a>`:'<span style="color:var(--muted);font-size:0.75rem">No file</span>'}</td>
-        <td><div class="act-row">
-          <button class="act primary" onclick="viewCandidate(${c.id})">View</button>
-          ${c.phone?`<button class="wa-act-btn" onclick="waQuickSend('${c.phone}','${c.fname}')" title="WhatsApp"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.857L.057 23.686a.5.5 0 00.61.61l5.939-1.453A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.99 0-3.85-.58-5.407-1.574l-.39-.243-3.927.961.987-3.81-.268-.415A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg></button>`:''}
-          ${isDirector()?`<button class="act danger" onclick="delCandidate(${c.id})">🗑</button>`:''}
-        </div></td>
-      </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No candidates yet</td></tr>'}</tbody>
-    </table>
-  </div>`;
+
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Candidate</th><th>Role Applied</th><th>Company</th>
+      <th>Applied Date</th><th>Stage</th><th>Interview</th>
+      <th>Resume</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${(()=>{
+      const filter=document.getElementById('candFilter')?.value||'';
+      const filtered=filter?data.filter(c=>c.status===filter):data;
+      if(!filtered.length)return`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">No candidates${filter?' in this stage':' yet'}</td></tr>`;
+      return filtered.map(c=>{
+        const dupCheck=data.filter(x=>x.id!==c.id&&(x.email===c.email||(x.phone&&c.phone&&x.phone===c.phone)));
+        const isDup=dupCheck.length>0;
+        return`<tr ${isDup?'style="background:rgba(251,191,36,0.06)"':''}>
+          <td>
+            <div class="td-name">${c.name}${isDup?` <span title="Applied before!" style="color:var(--rose);font-size:0.65rem;font-weight:700;background:rgba(232,86,122,0.1);padding:0.1rem 0.4rem;border-radius:4px">⚠️ DUP</span>`:''}</div>
+            <div class="td-sub">${c.email||''}</div>
+            <div class="td-sub">${c.phone||''}</div>
+          </td>
+          <td style="font-size:0.82rem">${c.role||'—'}</td>
+          <td style="font-size:0.82rem">${c.hrClient||'—'}</td>
+          <td style="font-size:0.78rem;color:var(--muted)">${c.dateAdded||'—'}</td>
+          <td><span class="badge ${stageColor[c.status]||'b-new'}">${c.status||'Applied'}</span></td>
+          <td style="font-size:0.78rem;color:${c.interviewDate?'var(--rose)':'var(--muted)'}">${c.interviewDate||'—'}</td>
+          <td>${c.resumeUrl?`<a href="${c.resumeUrl}" target="_blank" style="color:var(--indigo);font-size:0.78rem;font-weight:600">📄 View</a>`:'<span style="color:var(--muted);font-size:0.75rem">—</span>'}</td>
+          <td><div class="act-row">
+            <button class="act primary" onclick="viewCandidate(${c.id})">View</button>
+            ${c.phone?`<button class="wa-act-btn" onclick="waQuickSend('${c.phone}','${c.name.split(' ')[0]}')" title="WhatsApp"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.857L.057 23.686a.5.5 0 00.61.61l5.939-1.453A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.99 0-3.85-.58-5.407-1.574l-.39-.243-3.927.961.987-3.81-.268-.415A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg></button>`:''}
+            ${isDirector()?`<button class="act danger" onclick="delCandidate(${c.id})">🗑</button>`:''}
+          </div></td>
+        </tr>`;
+      }).join('');
+    })()}</tbody>
+  </table></div>`;
 }
 
 function openAddCandidate(){
+  const hrList=DB.hrclients.map(h=>`<option value="${h.company}">${h.company}</option>`).join('');
   openModal('Add Candidate',`
+    <div style="background:rgba(79,70,229,0.06);border-radius:8px;padding:0.75rem;font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">
+      📄 Upload a resume first — we will try to auto-detect the name and email. Then fill in remaining details.
+    </div>
     <div class="form-grid">
-      <div class="form-group"><label>Full Name *</label><input id="ca1" placeholder="e.g. John Tan"></div>
-      <div class="form-group"><label>Email</label><input id="ca2" type="email"></div>
-      <div class="form-group"><label>Phone</label><input id="ca3" placeholder="+65 9xxx xxxx"></div>
+      <div class="form-group form-full">
+        <label>Resume Upload (PDF/DOC — max 5MB)</label>
+        <div class="file-drop" id="resumeDrop" onclick="document.getElementById('resumeFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event,'resume')" style="cursor:pointer">
+          <div>📄 Click to upload or drag & drop resume</div>
+          <p style="font-size:0.75rem;color:var(--muted)">PDF, DOC, DOCX — max 5MB · Auto-fills name & email</p>
+        </div>
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" style="display:none" onchange="handleResumeUpload(this)">
+        <div id="resumePreview"></div>
+        <div id="dupWarning" style="display:none;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:0.65rem;font-size:0.78rem;color:#92400e;margin-top:0.5rem"></div>
+      </div>
+      <div class="form-group"><label>Full Name *</label><input id="ca1" placeholder="e.g. John Tan" oninput="checkDuplicate()"></div>
+      <div class="form-group"><label>Email</label><input id="ca2" type="email" oninput="checkDuplicate()"></div>
+      <div class="form-group"><label>Phone / WhatsApp</label>
+        <div style="display:flex;gap:0.5rem">
+          <select id="ca3cc" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem;font-size:0.82rem;outline:none;width:110px">
+            <option value="+65">🇸🇬 +65</option><option value="+60">🇲🇾 +60</option>
+            <option value="+62">🇮🇩 +62</option><option value="+63">🇵🇭 +63</option>
+            <option value="+66">🇹🇭 +66</option><option value="+84">🇻🇳 +84</option>
+            <option value="+86">🇨🇳 +86</option><option value="+91">🇮🇳 +91</option>
+            <option value="+44">🇬🇧 +44</option><option value="+1">🇺🇸 +1</option>
+          </select>
+          <input id="ca3" placeholder="9xxx xxxx" oninput="checkDuplicate()" style="flex:1;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.82rem;outline:none">
+        </div>
+      </div>
       <div class="form-group"><label>Nationality</label><input id="ca4" placeholder="e.g. Malaysian"></div>
-      <div class="form-group"><label>Role Applied</label><input id="ca5" placeholder="e.g. Software Engineer"></div>
-      <div class="form-group"><label>HR Client (Company)</label><input id="ca6" placeholder="Which company is hiring"></div>
-      <div class="form-group"><label>Interview Date</label><input id="ca7" type="date"></div>
-      <div class="form-group"><label>Status</label>
-        <select id="ca8">
+      <div class="form-group"><label>Role Applied *</label><input id="ca5" placeholder="e.g. HR Executive"></div>
+      <div class="form-group"><label>Company (HR Client)</label>
+        <select id="ca6" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.82rem;outline:none;width:100%">
+          <option value="">— Select or type below —</option>
+          ${hrList}
+          <option value="__other__">Other (type below)</option>
+        </select>
+        <input id="ca6b" placeholder="Or type company name" style="margin-top:0.35rem;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.82rem;outline:none;width:100%;box-sizing:border-box">
+      </div>
+      <div class="form-group"><label>Current Stage</label>
+        <select id="ca8" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.82rem;outline:none;width:100%">
           <option>Applied</option><option>Shortlisted</option><option>Interview Scheduled</option>
-          <option>Offered</option><option>Hired</option><option>Rejected</option>
+          <option>Interview Done</option><option>Offered</option><option>Hired</option>
+          <option>Rejected</option><option>Withdrawn</option>
         </select>
       </div>
-      <div class="form-group form-full">
-        <label>Resume (Upload PDF)</label>
-        <div class="file-drop" id="resumeDrop" onclick="document.getElementById('resumeFile').click()" ondragover="dragOver(event)" ondrop="dropFile(event,'resume')">
-          <div>📄 Click to upload or drag & drop</div>
-          <p>PDF, DOC, DOCX — max 5MB</p>
-        </div>
-        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" style="display:none" onchange="handleFile(this,'resume')">
-        <div id="resumePreview"></div>
+      <div class="form-group"><label>Interview Date</label><input id="ca7" type="date"></div>
+      <div class="form-group"><label>Expected Salary (SGD)</label><input id="ca10" placeholder="e.g. 3500"></div>
+      <div class="form-group"><label>Current Salary (SGD)</label><input id="ca11" placeholder="e.g. 3000"></div>
+      <div class="form-group"><label>Notice Period</label><input id="ca12" placeholder="e.g. 1 month"></div>
+      <div class="form-group"><label>Source</label>
+        <select id="ca13" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;font-size:0.82rem;outline:none;width:100%">
+          <option>Direct Application</option><option>LinkedIn</option><option>JobStreet</option>
+          <option>Indeed</option><option>Referral</option><option>Walk-in</option><option>Other</option>
+        </select>
       </div>
-      <div class="form-group form-full"><label>Notes</label><textarea id="ca9"></textarea></div>
+      <div class="form-group form-full"><label>Notes / Remarks</label><textarea id="ca9" placeholder="Interview notes, strengths, concerns..." style="min-height:70px"></textarea></div>
     </div>`,
     `<button class="btn-sec" onclick="closeModal()">Cancel</button>
      <button class="btn-primary" onclick="addCandidate()">Add Candidate</button>`
   );
+}
+
+function handleResumeUpload(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>5*1024*1024){showToast('File too large! Max 5MB');return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    pendingFile.resume={name:file.name,data:e.target.result,type:file.type};
+    const prev=document.getElementById('resumePreview');
+    if(prev)prev.innerHTML=`<div class="file-list"><div class="file-item">📄 <a href="${e.target.result}" target="_blank">${file.name}</a> <button class="file-del" onclick="clearFile('resume')">✕</button></div></div>`;
+    // Try to extract name/email from filename as basic hint
+    const nameGuess=file.name.replace(/\.(pdf|doc|docx)$/i,'').replace(/[_\-]/g,' ').replace(/resume|cv/gi,'').trim();
+    if(nameGuess&&!document.getElementById('ca1').value){
+      document.getElementById('ca1').value=nameGuess;
+      checkDuplicate();
+    }
+    showToast('Resume uploaded! Fill in the details below.');
+  };
+  reader.readAsDataURL(file);
+}
+
+function checkDuplicate(){
+  const email=document.getElementById('ca2')?.value?.trim().toLowerCase();
+  const phone=(document.getElementById('ca3cc')?.value||'')+(document.getElementById('ca3')?.value?.replace(/\s/g,'')||'');
+  const name=document.getElementById('ca1')?.value?.trim().toLowerCase();
+  const warn=document.getElementById('dupWarning');if(!warn)return;
+  const dups=DB.candidates.filter(c=>{
+    if(email&&c.email&&c.email.toLowerCase()===email)return true;
+    if(phone.length>4&&c.phone&&c.phone.replace(/\s/g,'')===phone)return true;
+    return false;
+  });
+  if(dups.length){
+    warn.style.display='block';
+    warn.innerHTML=`⚠️ <strong>Possible duplicate detected!</strong><br>${dups.map(d=>`${d.name} — applied for <em>${d.role||'unknown role'}</em> at <em>${d.hrClient||'unknown company'}</em> on ${d.dateAdded||'unknown date'} · Status: <strong>${d.status}</strong>`).join('<br>')}`;
+  } else {
+    warn.style.display='none';
+  }
 }
 
 let pendingFile={resume:null};
@@ -1188,33 +1342,48 @@ function clearFile(type){
 function dragOver(e){e.preventDefault();e.currentTarget.classList.add('drag');}
 function dropFile(e,type){
   e.preventDefault();e.currentTarget.classList.remove('drag');
-  const file=e.dataTransfer.files[0];
-  if(!file)return;
+  const file=e.dataTransfer.files[0];if(!file)return;
   const inp=document.getElementById(type+'File');
   const dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;
-  handleFile(inp,type);
+  if(type==='resume')handleResumeUpload(inp);else handleFile(inp,type);
 }
 
 function addCandidate(){
-  const f=v=>document.getElementById(v).value.trim();
+  const f=v=>document.getElementById(v)?.value?.trim()||'';
   if(!f('ca1')){showToast('Name required!');return;}
+  const cc=document.getElementById('ca3cc')?.value||'+65';
+  const num=f('ca3').replace(/\s/g,'');
+  const phone=num?(cc+num):'';
+  const company=f('ca6')==='__other__'||!f('ca6')?f('ca6b'):f('ca6');
   DB.candidates.unshift({
-    id:DB.nextId.c++,name:f('ca1'),email:f('ca2'),phone:f('ca3'),
-    nationality:f('ca4'),role:f('ca5'),hrClient:f('ca6'),interviewDate:f('ca7'),
-    status:f('ca8'),notes:f('ca9'),
+    id:DB.nextId.c++,name:f('ca1'),email:f('ca2'),phone,
+    nationality:f('ca4'),role:f('ca5'),hrClient:company,
+    interviewDate:f('ca7'),status:f('ca8'),
+    expectedSalary:f('ca10'),currentSalary:f('ca11'),
+    noticePeriod:f('ca12'),source:f('ca13'),
+    notes:f('ca9'),
     resumeUrl:pendingFile.resume?pendingFile.resume.data:'',
     resumeName:pendingFile.resume?pendingFile.resume.name:'',
-    dateAdded:today()
+    dateAdded:today(),
+    timeline:[{date:today(),action:'Added to CRM',stage:f('ca8'),by:currentUser?.name||''}]
   });
   pendingFile.resume=null;
-  saveDB();closeModal();nav('candidates');showToast('Candidate added!');
+  saveDB();closeModal();nav('candidates');showToast('Candidate added! 🎉');
 }
 
 function viewCandidate(id){
   const c=DB.candidates.find(x=>x.id===id);if(!c)return;
-  openModal('Candidate — '+c.name,`
-    <div class="detail-section">
-      <h4>Personal Info</h4>
+  if(!c.timeline)c.timeline=[];
+  const stages=['Applied','Shortlisted','Interview Scheduled','Interview Done','Offered','Hired','Rejected','Withdrawn'];
+  const stageColor={Applied:'b-new',Shortlisted:'b-contacted','Interview Scheduled':'b-proposal','Interview Done':'b-proposal',Offered:'b-won',Hired:'b-won',Rejected:'b-lost',Withdrawn:'b-lost'};
+  const dups=DB.candidates.filter(x=>x.id!==c.id&&(x.email===c.email||(x.phone&&c.phone&&x.phone===c.phone)));
+
+  openModal(`👤 ${c.name}`,`
+    ${dups.length?`<div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:0.65rem;font-size:0.78rem;color:#92400e;margin-bottom:0.75rem">
+      ⚠️ Duplicate detected: ${dups.map(d=>`<strong>${d.name}</strong> applied for <em>${d.role}</em> at <em>${d.hrClient}</em> (${d.status})`).join(', ')}
+    </div>`:''}
+
+    <div class="detail-section"><h4>Personal Info</h4>
       <div class="detail-row">
         <div class="detail-item"><label>Full Name</label><p>${c.name}</p></div>
         <div class="detail-item"><label>Email</label><p>${c.email||'—'}</p></div>
@@ -1222,30 +1391,81 @@ function viewCandidate(id){
         <div class="detail-item"><label>Nationality</label><p>${c.nationality||'—'}</p></div>
       </div>
     </div>
-    <div class="detail-section">
-      <h4>Application Details</h4>
+
+    <div class="detail-section"><h4>Application Details</h4>
       <div class="detail-row">
-        <div class="detail-item"><label>Role Applied</label><p>${c.role||'—'}</p></div>
-        <div class="detail-item"><label>HR Client</label><p>${c.hrClient||'—'}</p></div>
-        <div class="detail-item"><label>Interview Date</label><p>${c.interviewDate||'—'}</p></div>
-        <div class="detail-item"><label>Status</label>
-          <select id="cStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;font-size:0.82rem;outline:none;width:100%">
-            ${['Applied','Shortlisted','Interview Scheduled','Offered','Hired','Rejected'].map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}
+        <div class="detail-item"><label>Role Applied</label><input id="cvRole" value="${c.role||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.82rem;width:100%;outline:none"></div>
+        <div class="detail-item"><label>Company</label><input id="cvClient" value="${c.hrClient||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.82rem;width:100%;outline:none"></div>
+        <div class="detail-item"><label>Interview Date</label><input id="cvInterview" type="date" value="${c.interviewDate||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.82rem;width:100%;outline:none"></div>
+        <div class="detail-item"><label>Source</label><p>${c.source||'—'}</p></div>
+        <div class="detail-item"><label>Expected Salary</label><input id="cvExpSal" value="${c.expectedSalary||''}" placeholder="SGD" style="border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.82rem;width:100%;outline:none"></div>
+        <div class="detail-item"><label>Current Salary</label><input id="cvCurSal" value="${c.currentSalary||''}" placeholder="SGD" style="border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.82rem;width:100%;outline:none"></div>
+        <div class="detail-item"><label>Notice Period</label><input id="cvNotice" value="${c.noticePeriod||''}" style="border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.82rem;width:100%;outline:none"></div>
+        <div class="detail-item"><label>Stage</label>
+          <select id="cvStatus" style="border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.82rem;width:100%;outline:none">
+            ${stages.map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}
           </select>
         </div>
       </div>
     </div>
-    ${c.resumeUrl?`<div class="detail-section"><h4>Resume</h4><div class="file-list"><div class="file-item">📄 <a href="${c.resumeUrl}" target="_blank">${c.resumeName||'Resume'}</a></div></div></div>`:''}
-    <div class="detail-section"><h4>Notes</h4><textarea id="cNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:80px;outline:none">${c.notes||''}</textarea></div>`,
+
+    ${c.resumeUrl?`<div class="detail-section"><h4>Resume</h4>
+      <div class="file-list"><div class="file-item">📄 <a href="${c.resumeUrl}" target="_blank" style="color:var(--indigo);font-weight:600">${c.resumeName||'View Resume'}</a></div></div>
+    </div>`:''}
+
+    <div class="detail-section"><h4>📋 Application Timeline</h4>
+      <div style="border-left:2px solid var(--border);padding-left:1rem;margin-left:0.5rem">
+        ${(c.timeline||[]).map(t=>`<div style="margin-bottom:0.75rem;position:relative">
+          <div style="width:10px;height:10px;background:var(--indigo);border-radius:50%;position:absolute;left:-1.35rem;top:4px"></div>
+          <div style="font-size:0.78rem;font-weight:700">${t.action}</div>
+          <div style="font-size:0.72rem;color:var(--muted)">${t.date} · ${t.stage||''} · ${t.by||''}</div>
+          ${t.note?`<div style="font-size:0.75rem;color:var(--slate);margin-top:0.2rem">${t.note}</div>`:''}
+        </div>`).join('')}
+        ${!(c.timeline||[]).length?'<div style="color:var(--muted);font-size:0.78rem">No timeline entries yet</div>':''}
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+        <input id="cvNote" placeholder="Add note to timeline..." style="flex:1;border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.82rem;outline:none">
+        <button onclick="addCandidateNote(${id})" style="background:var(--indigo);color:white;border:none;border-radius:8px;padding:0.4rem 0.85rem;font-size:0.78rem;cursor:pointer">+ Add</button>
+      </div>
+    </div>
+
+    <div class="detail-section"><h4>Notes</h4>
+      <textarea id="cvNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:80px;outline:none">${c.notes||''}</textarea>
+    </div>`,
     `<button class="btn-sec" onclick="closeModal()">Cancel</button>
-     <button class="btn-primary" onclick="saveCandidate(${id})">Save</button>`
+     ${c.phone?`<button onclick="waQuickSend('${c.phone}','${c.name.split(' ')[0]}')" style="background:#25D366;color:white;border:none;border-radius:8px;padding:0.5rem 1rem;font-size:0.82rem;cursor:pointer;font-weight:600">💬 WhatsApp</button>`:''}
+     <button class="btn-primary" onclick="saveCandidate(${id})">Save Changes</button>`
   );
+}
+
+function addCandidateNote(id){
+  const c=DB.candidates.find(x=>x.id===id);if(!c)return;
+  const note=document.getElementById('cvNote')?.value?.trim();
+  if(!note){showToast('Type a note first!');return;}
+  if(!c.timeline)c.timeline=[];
+  c.timeline.push({date:today(),action:'Note added',stage:c.status,by:currentUser?.name||'',note});
+  saveDB();
+  document.getElementById('cvNote').value='';
+  showToast('Note added!');
+  // Refresh modal
+  closeModal();viewCandidate(id);
 }
 
 function saveCandidate(id){
   const c=DB.candidates.find(x=>x.id===id);if(!c)return;
-  c.status=document.getElementById('cStatus').value;
-  c.notes=document.getElementById('cNotes').value;
+  const newStatus=document.getElementById('cvStatus').value;
+  if(!c.timeline)c.timeline=[];
+  if(newStatus!==c.status){
+    c.timeline.push({date:today(),action:`Stage changed: ${c.status} → ${newStatus}`,stage:newStatus,by:currentUser?.name||''});
+  }
+  c.status=newStatus;
+  c.role=document.getElementById('cvRole').value;
+  c.hrClient=document.getElementById('cvClient').value;
+  c.interviewDate=document.getElementById('cvInterview').value;
+  c.expectedSalary=document.getElementById('cvExpSal').value;
+  c.currentSalary=document.getElementById('cvCurSal').value;
+  c.noticePeriod=document.getElementById('cvNotice').value;
+  c.notes=document.getElementById('cvNotes').value;
   saveDB();closeModal();nav('candidates');showToast('Candidate updated!');
 }
 
@@ -2792,7 +3012,20 @@ function delCustomLeaveType(name){
 // ══════════════════════════════════════
 // WHATSAPP ENGINE
 // ══════════════════════════════════════
-function waNum(phone){return phone.replace(/[\s\-\(\)\+]/g,'');}
+function waNum(phone){
+  // Remove spaces, dashes, brackets
+  let n = phone.replace(/[\s\-\(\)]/g,'');
+  // If starts with +, already has country code
+  if(n.startsWith('+')) return n;
+  // If starts with 00, convert to +
+  if(n.startsWith('00')) return '+'+n.slice(2);
+  // Singapore numbers: 8 digits starting with 8 or 9 → add +65
+  if(/^[89]\d{7}$/.test(n)) return '+65'+n;
+  // Malaysian numbers: starts with 01 → add +6
+  if(n.startsWith('01')&&n.length>=10) return '+6'+n;
+  // Default: add +65 for Singapore
+  return '+65'+n;
+}
 function waSend(phone,msg){
   if(!msg||!msg.trim()){showToast('Message is empty!');return;}
   const num=waNum(phone);
