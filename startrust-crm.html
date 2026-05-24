@@ -507,7 +507,6 @@ function renderDashboard(){
 // ENQUIRIES
 // ══════════════════════════════════════
 function renderEnquiries(filter=''){
-  setTimeout(()=>{if(typeof syncWeb3Forms==='function')syncWeb3Forms().catch(()=>{});},800);
   let data=DB.enquiries;
   if(filter)data=data.filter(e=>e.status===filter);
   return `
@@ -519,7 +518,7 @@ function renderEnquiries(filter=''){
     <div class="toolbar-title">${data.length} enquiries</div>
     <div class="search-wrap">🔍 <input id="enqSearch" placeholder="Search..." oninput="filterEnq()"></div>
     ${isDirector()?`<div style="display:flex;gap:0.5rem">
-      <button class="btn-sec" onclick="syncWeb3Forms()">🔄 Sync Now</button>
+      <button class="btn-sec" onclick="syncWeb3Forms()">📋 Form Sync</button>
       <button class="btn-primary" onclick="openAddEnquiry()">+ Add Enquiry</button>
     </div>`:''}
     ${isDirector()?`<button class="btn-sec" onclick="exportEnquiries()">📤 Export</button>`:''}
@@ -651,43 +650,24 @@ function showFormspreeHelp(){
     </div>`);
 }
 
-async function syncWeb3Forms(){
-  showToast('Syncing from Web3Forms…');
-  try{
-    const resp=await fetch('https://api.web3forms.com/submissions?apikey=1d7d41ab-5b55-4f35-bb01-e3bb1217e434&limit=50',{
-      headers:{'Accept':'application/json'}
-    });
-    const data=await resp.json();
-    if(!data.success||!data.data)throw new Error('No data');
-    const synced=JSON.parse(localStorage.getItem('st_w3_synced')||'[]');
-    let added=0;
-    data.data.forEach(sub=>{
-      const uid=sub.id||sub.created_at;
-      if(synced.includes(uid))return;
-      // Map Web3Forms fields to CRM entry
-      const fields=sub.data||sub;
-      const fname=(fields['First Name']||fields.name||'').split(' ')[0]||'Unknown';
-      const lname=(fields['First Name']||fields.name||'').split(' ').slice(1).join(' ')||fields['Last Name']||'';
-      DB.enquiries.unshift({
-        id:DB.nextId.e++,
-        fname,lname,
-        email:fields.email||'',
-        phone:fields['Phone / WhatsApp']||fields.phone||'',
-        company:fields['Company Name']||fields.company||'',
-        service:fields.Service||fields.service||'General',
-        message:fields.Message||fields.message||'',
-        status:'New',followup:'',notes:'[Via Web3Forms]',
-        date:sub.created_at?sub.created_at.split('T')[0]:new Date().toISOString().split('T')[0]
-      });
-      synced.push(uid);added++;
-    });
-    localStorage.setItem('st_w3_synced',JSON.stringify(synced));
-    saveDB();updateBadges();nav('enquiries');
-    showToast(added>0?`✅ ${added} new enquiry synced!`:'✅ Already up to date!');
-  }catch(err){
-    showToast('⚠️ Sync failed — check connection');
-    console.error(err);
-  }
+function syncWeb3Forms(){
+  openModal('About Form Sync',`
+    <div style="font-size:0.85rem;line-height:1.7;color:var(--slate)">
+      <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:0.75rem;margin-bottom:1rem">
+        <strong>API sync requires Web3Forms paid plan.</strong><br>
+        The free plan sends email notifications only — it does not allow reading submissions via API.
+      </div>
+      <p style="margin-bottom:0.75rem"><strong>Your current flow (working fine):</strong></p>
+      <ol style="padding-left:1.2rem;color:var(--muted);margin-bottom:1rem">
+        <li>Client submits form on your website</li>
+        <li>You receive email at admin@startrust-consultancy.com</li>
+        <li>Enquiry auto-appears in CRM if submitted from same browser</li>
+        <li>For cross-device submissions — click <strong>+ Add Enquiry</strong> and enter details from email</li>
+      </ol>
+      <div style="background:rgba(79,70,229,0.06);border-radius:8px;padding:0.75rem;font-size:0.78rem;color:var(--muted)">
+        To enable full auto-sync, upgrade Web3Forms to paid plan (USD $10/mth).
+      </div>
+    </div>`);
 }
 
 function openAddEnquiry(){
