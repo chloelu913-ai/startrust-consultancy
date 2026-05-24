@@ -1474,7 +1474,7 @@ pre,code{overflow-x:auto;max-width:100%}
   <div class="contact-form fade-up">
     <div class="form-heading">Send Us a Message</div>
     <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1.2rem">Fill in the form below and we'll reply within one business day.</p>
-    <form id="contactForm" action="https://api.web3forms.com/submit" method="POST" novalidate>
+    <form id="contactForm"  method="POST" novalidate>
       <input type="hidden" name="access_key" value="1d7d41ab-5b55-4f35-bb01-e3bb1217e434">
       <input type="hidden" name="subject" value="New Enquiry from StarTrust Website">
       <input type="hidden" name="from_name" value="StarTrust Website">
@@ -1842,51 +1842,27 @@ document.getElementById('contactForm').addEventListener('submit',async function(
         const rawPhone=fd.get('Phone / WhatsApp')||'';
         const fullPhone=cc+rawPhone.replace(/\s/g,'');
         fd.set('Phone / WhatsApp', fullPhone);
-    const resp=await fetch('https://api.web3forms.com/submit',{
+    const resp=await fetch('https://startrust-ai.chloelu913.workers.dev/submit-enquiry',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        access_key:'1d7d41ab-5b55-4f35-bb01-e3bb1217e434',
-        subject:'New Enquiry from StarTrust Website',
-        from_name:'StarTrust Website',
-        'First Name':fd.get('First Name')||'',
-        'Last Name':fd.get('Last Name')||'',
+        firstName:fd.get('First Name')||'',
+        lastName:fd.get('Last Name')||'',
         email:fd.get('email')||'',
-        'Phone / WhatsApp':fullPhone,
-        'Company Name':fd.get('Company Name')||'',
-        Service:fd.get('Service')||'',
-        Message:fd.get('Message')||''
+        phone:fullPhone,
+        company:fd.get('Company Name')||'',
+        service:fd.get('Service')||'General',
+        message:fd.get('Message')||'',
+        date:new Date().toISOString().split('T')[0]
       })
     });
     const data=await resp.json();
     if(data.success){
       successEl.style.display='block';
-      // Save to CRM localStorage
-      try{
-        const entry={
-          id:Date.now(),
-          fname:fd.get('First Name')||'',
-          lname:fd.get('Last Name')||'',
-          email:fd.get('email')||'',
-          phone:fullPhone,
-          company:fd.get('Company Name')||'',
-          service:fd.get('Service')||'General',
-          message:fd.get('Message')||'',
-          status:'New',followup:'',notes:'',
-          date:new Date().toISOString().split('T')[0]
-        };
-        const existing=JSON.parse(localStorage.getItem('st_web_enquiries')||'[]');
-        existing.unshift(entry);
-        localStorage.setItem('st_web_enquiries',JSON.stringify(existing));
-        // Also store in web3forms sync list with timestamp
-        const w3list=JSON.parse(localStorage.getItem('st_w3_submissions')||'[]');
-        w3list.unshift({...entry,submittedAt:new Date().toISOString()});
-        localStorage.setItem('st_w3_submissions',JSON.stringify(w3list));
-      }catch(ex){}
       this.reset();
       btn.textContent='Send Enquiry';btn.disabled=false;btn.style.opacity='';
     } else {
-      throw new Error(data.message||'failed');
+      throw new Error(data.error||'failed');
     }
   } catch(err){
     errorEl.style.display='block';

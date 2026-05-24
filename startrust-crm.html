@@ -432,21 +432,44 @@ function loadDB(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse
 function saveDB(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
 loadDB();
 
-function syncWebEnquiries(){
+const WORKER_URL='https://startrust-ai.chloelu913.workers.dev';
+
+async function syncKVEnquiries(){
   try{
-    const web=JSON.parse(localStorage.getItem('st_web_enquiries')||'[]');
-    const synced=JSON.parse(localStorage.getItem('st_web_synced')||'[]');
+    const resp=await fetch(WORKER_URL+'/get-enquiries');
+    const data=await resp.json();
+    if(!data.success||!data.enquiries)return;
+    const synced=JSON.parse(localStorage.getItem('st_kv_synced')||'[]');
     let added=0;
-    web.forEach(w=>{
+    data.enquiries.forEach(w=>{
       if(!synced.includes(w.id)){
-        DB.enquiries.unshift({id:DB.nextId.e++,fname:w.fname||'',lname:w.lname||'',email:w.email||'',phone:w.phone||'',company:w.company||'',service:w.service||'General',message:w.message||'',status:'New',followup:'',notes:'[From website]',date:w.date||new Date().toISOString().split('T')[0]});
-        synced.push(w.id);added++;
+        DB.enquiries.unshift({
+          id:DB.nextId.e++,
+          kvId:w.id,
+          fname:w.firstName||'',
+          lname:w.lastName||'',
+          email:w.email||'',
+          phone:w.phone||'',
+          company:w.company||'',
+          service:w.service||'General',
+          message:w.message||'',
+          status:w.status||'New',
+          followup:'',
+          notes:'[From website]',
+          date:w.date?w.date.split('T')[0]:new Date().toISOString().split('T')[0]
+        });
+        synced.push(w.id);
+        added++;
       }
     });
-    if(added>0){saveDB();localStorage.setItem('st_web_synced',JSON.stringify(synced));}
-  }catch(e){}
+    if(added>0){
+      saveDB();
+      localStorage.setItem('st_kv_synced',JSON.stringify(synced));
+      updateBadges();
+    }
+  }catch(e){console.warn('KV sync failed:',e);}
 }
-syncWebEnquiries();
+syncKVEnquiries();
 
 // ══════════════════════════════════════
 // AUTH
@@ -587,7 +610,7 @@ function renderEnquiries(filter=''){
     <div class="toolbar-title">${data.length} enquiries</div>
     <div class="search-wrap">🔍 <input id="enqSearch" placeholder="Search..." oninput="filterEnq()"></div>
     ${isDirector()?`<div style="display:flex;gap:0.5rem">
-      <button class="btn-sec" onclick="syncWeb3Forms()">📥 Import from Email</button>
+      <button class="btn-sec" onclick="syncKVEnquiries().then(()=>{nav('enquiries');showToast('Synced from cloud!')})">🔄 Sync Now</button>
       <button class="btn-primary" onclick="openAddEnquiry()">+ Add Enquiry</button>
     </div>`:''}
     ${isDirector()?`<button class="btn-sec" onclick="exportEnquiries()">📤 Export</button>`:''}
@@ -703,6 +726,14 @@ function saveEnquiry(id){
   e.assignedTo=document.getElementById('eAssigned').value;
   e.notes=document.getElementById('eNotes').value;
   saveDB();updateBadges();closeModal();nav('enquiries');showToast('Enquiry updated!');
+  // Sync status back to KV if this came from the website form
+  if(e.kvId){
+    fetch(WORKER_URL+'/update-enquiry',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:e.kvId,status:e.status,notes:e.notes})
+    }).catch(()=>{});
+  }
 }
 
 function showFormspreeHelp(){
