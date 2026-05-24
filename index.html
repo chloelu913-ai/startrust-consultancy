@@ -1484,7 +1484,25 @@ pre,code{overflow-x:auto;max-width:100%}
       <div class="form-group"><label for="lname">Last Name <span style="color:var(--rose)">*</span></label><input type="text" id="lname" name="Last Name" placeholder="Tan" autocomplete="family-name" required></div>
     </div>
     <div class="form-group"><label for="email">Email Address <span style="color:var(--rose)">*</span></label><input type="email" id="email" name="email" placeholder="jane@company.com" autocomplete="email" required></div>
-    <div class="form-group"><label for="phone">Phone / WhatsApp <span style="color:var(--rose)">*</span></label><input type="tel" id="phone" name="Phone / WhatsApp" placeholder="+65 9000 0000" autocomplete="tel" required></div>
+    <div class="form-group"><label for="phone">Phone / WhatsApp <span style="color:var(--rose)">*</span></label>
+      <div style="display:flex;gap:0.5rem">
+        <select id="phonecc" name="Country Code" autocomplete="tel-country-code" style="border:1px solid #e2e8f0;border-radius:10px;padding:0.75rem 0.5rem;font-size:0.9rem;outline:none;width:120px;background:white;color:#374151;flex-shrink:0">
+          <option value="+65">🇸🇬 +65</option>
+          <option value="+60">🇲🇾 +60</option>
+          <option value="+62">🇮🇩 +62</option>
+          <option value="+63">🇵🇭 +63</option>
+          <option value="+66">🇹🇭 +66</option>
+          <option value="+84">🇻🇳 +84</option>
+          <option value="+86">🇨🇳 +86</option>
+          <option value="+91">🇮🇳 +91</option>
+          <option value="+880">🇧🇩 +880</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+61">🇦🇺 +61</option>
+        </select>
+        <input type="tel" id="phone" name="Phone / WhatsApp" placeholder="9000 0000" autocomplete="tel-national" required style="flex:1">
+      </div>
+    </div>
     <div class="form-group"><label for="company">Company Name <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem">(Required for HR enquiries)</span></label><input type="text" id="company" name="Company Name" placeholder="e.g. ABC Pte Ltd / N/A for students" autocomplete="organization"></div>
     <div class="form-group">
       <label for="service">I Am Enquiring About <span style="color:var(--rose)">*</span></label>
@@ -1819,6 +1837,11 @@ document.getElementById('contactForm').addEventListener('submit',async function(
   successEl.style.display='none';errorEl.style.display='none';
   try{
     const fd=new FormData(this);
+        // Combine country code + phone number
+        const cc=document.getElementById('phonecc')?.value||'+65';
+        const rawPhone=fd.get('Phone / WhatsApp')||'';
+        const fullPhone=cc+rawPhone.replace(/\s/g,'');
+        fd.set('Phone / WhatsApp', fullPhone);
     const resp=await fetch('https://api.web3forms.com/submit',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
@@ -1829,7 +1852,7 @@ document.getElementById('contactForm').addEventListener('submit',async function(
         'First Name':fd.get('First Name')||'',
         'Last Name':fd.get('Last Name')||'',
         email:fd.get('email')||'',
-        'Phone / WhatsApp':fd.get('Phone / WhatsApp')||'',
+        'Phone / WhatsApp':fullPhone,
         'Company Name':fd.get('Company Name')||'',
         Service:fd.get('Service')||'',
         Message:fd.get('Message')||''
@@ -1845,7 +1868,7 @@ document.getElementById('contactForm').addEventListener('submit',async function(
           fname:fd.get('First Name')||'',
           lname:fd.get('Last Name')||'',
           email:fd.get('email')||'',
-          phone:fd.get('Phone / WhatsApp')||'',
+          phone:fullPhone,
           company:fd.get('Company Name')||'',
           service:fd.get('Service')||'General',
           message:fd.get('Message')||'',
