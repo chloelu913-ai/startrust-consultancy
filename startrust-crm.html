@@ -125,6 +125,8 @@ tr:hover td{background:#fafbfc}
 /* ── ACTIONS ── */
 .act-row{display:flex;gap:0.35rem}
 .act{background:transparent;border:1px solid var(--border);border-radius:6px;padding:0.28rem 0.6rem;font-size:0.7rem;cursor:pointer;color:var(--mid);transition:all 0.15s;font-family:'DM Sans',sans-serif}
+.wa-act-btn{background:#25D366;border:none;border-radius:6px;padding:0.28rem 0.55rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;box-shadow:0 2px 6px rgba(37,211,102,0.35)}
+.wa-act-btn:hover{background:#1ebe5d;transform:scale(1.08);box-shadow:0 3px 10px rgba(37,211,102,0.45)}
 .act:hover{border-color:var(--indigo);color:var(--indigo)}
 .act.danger:hover{border-color:var(--red);color:var(--red)}
 .act.primary{border-color:var(--rose);color:var(--rose)}
@@ -543,7 +545,7 @@ function renderEnqRows(data){
     <td style="font-size:0.78rem">${e.assignedTo||'—'}</td>
     <td><div class="act-row">
       <button class="act primary" onclick="viewEnquiry(${e.id})">View</button>
-      ${e.phone?`<button class="act" onclick="waQuickSend('${e.phone}','${e.fname}')" title="WhatsApp" style="background:#25D366;color:white;border:none">💬</button>`:''}
+      ${e.phone&&e.phone.trim()&&e.phone.trim()!=='—'?`<button class="act wa-act-btn" onclick="waQuickSend('${e.phone}','${e.fname}')" title="Send WhatsApp"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.857L.057 23.686a.5.5 0 00.61.61l5.939-1.453A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.99 0-3.85-.58-5.407-1.574l-.39-.243-3.927.961.987-3.81-.268-.415A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg></button>`:''}
       <button class="convert-btn" onclick="convertToProject(${e.id})" title="Convert to Project">→ Project</button>
       ${isDirector()?`<button class="act danger" onclick="delEnquiry(${e.id})">🗑</button>`:''}
     </div></td>
@@ -607,7 +609,7 @@ function viewEnquiry(id){
           <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem">${t.label}</div>
           <div style="font-size:0.8rem;color:var(--slate);line-height:1.5;margin-bottom:0.5rem" id="waTpl_${i}">${t.msg}</div>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            <button onclick="waSend('${e.phone}',document.getElementById('waTpl_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;gap:0.3rem">📤 Send on WhatsApp</button>
+            <button onclick="waSend('${e.phone}',document.getElementById('waTpl_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.78rem;cursor:pointer;font-weight:600;box-shadow:0 2px 6px rgba(37,211,102,0.35)">Send on WhatsApp</button>
             <button onclick="waCopy(document.getElementById('waTpl_${i}').textContent)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📋 Copy</button>
           </div>
         </div>`).join('')}
@@ -615,7 +617,7 @@ function viewEnquiry(id){
           <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem">✏️ Custom Message</div>
           <textarea id="waCustomMsg" placeholder="Type your message..." style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.65rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px;outline:none;margin-bottom:0.5rem"></textarea>
           <div style="display:flex;gap:0.5rem">
-            <button onclick="waSend('${e.phone}',document.getElementById('waCustomMsg').value)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send on WhatsApp</button>
+            <button onclick="waSend('${e.phone}',document.getElementById('waCustomMsg').value)" style="background:#25D366;color:white;border:none;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.78rem;cursor:pointer;font-weight:600;box-shadow:0 2px 6px rgba(37,211,102,0.35)">Send on WhatsApp</button>
             <button onclick="waCopy(document.getElementById('waCustomMsg').value)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📋 Copy</button>
           </div>
         </div>
@@ -895,7 +897,7 @@ function renderHRClients(){
         <td><span class="badge ${h.status==='Active'?'b-active':'b-pending'}">${h.status||'Active'}</span></td>
         <td><div class="act-row">
           <button class="act primary" onclick="viewHR(${h.id})">View</button>
-          ${h.phone?`<button class="act" onclick="waHRClient(DB.hrclients.find(x=>x.id===${h.id}))" style="background:#25D366;color:white;border:none" title="WhatsApp">💬</button>`:''}
+          ${h.phone?`<button class="wa-act-btn" onclick="waHRClient(DB.hrclients.find(x=>x.id===${h.id}))" title="WhatsApp"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.857L.057 23.686a.5.5 0 00.61.61l5.939-1.453A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.99 0-3.85-.58-5.407-1.574l-.39-.243-3.927.961.987-3.81-.268-.415A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg></button>`:''}
           ${isDirector()?`<button class="act danger" onclick="delHR(${h.id})">🗑</button>`:''}
         </div></td>
       </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No HR clients yet</td></tr>'}</tbody>
@@ -1073,7 +1075,7 @@ function renderCandidates(){
         <td>${c.resumeUrl?`<a href="${c.resumeUrl}" target="_blank" style="color:var(--indigo);font-size:0.78rem;font-weight:600">📄 View</a>`:'<span style="color:var(--muted);font-size:0.75rem">No file</span>'}</td>
         <td><div class="act-row">
           <button class="act primary" onclick="viewCandidate(${c.id})">View</button>
-          ${c.phone?`<button class="act" onclick="waQuickSend('${c.phone}','${c.fname}')" style="background:#25D366;color:white;border:none" title="WhatsApp">💬</button>`:''}
+          ${c.phone?`<button class="wa-act-btn" onclick="waQuickSend('${c.phone}','${c.fname}')" title="WhatsApp"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.857L.057 23.686a.5.5 0 00.61.61l5.939-1.453A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.99 0-3.85-.58-5.407-1.574l-.39-.243-3.927.961.987-3.81-.268-.415A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg></button>`:''}
           ${isDirector()?`<button class="act danger" onclick="delCandidate(${c.id})">🗑</button>`:''}
         </div></td>
       </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No candidates yet</td></tr>'}</tbody>
@@ -1230,7 +1232,7 @@ function renderStudents(){
         ${isDirector()?`<td>${s.schoolPaid?`<span style="color:var(--green);font-size:0.78rem;font-weight:700">✅ ${s.paymentDate||''}</span>`:`<span style="color:var(--muted);font-size:0.75rem">Not yet</span>`}</td>`:''}
         <td><div class="act-row">
           <button class="act primary" onclick="viewStudent(${s.id})">View</button>
-          ${s.phone?`<button class="act" onclick="waStudent(DB.students.find(x=>x.id===${s.id}))" style="background:#25D366;color:white;border:none" title="WhatsApp">💬</button>`:''}
+          ${s.phone?`<button class="wa-act-btn" onclick="waStudent(DB.students.find(x=>x.id===${s.id}))" title="WhatsApp"><svg viewBox="0 0 24 24" fill="white" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.857L.057 23.686a.5.5 0 00.61.61l5.939-1.453A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.99 0-3.85-.58-5.407-1.574l-.39-.243-3.927.961.987-3.81-.268-.415A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg></button>`:''}
           ${isDirector()?`<button class="act danger" onclick="delStudent(${s.id})">🗑</button>`:''}
         </div></td>
       </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No students yet</td></tr>'}</tbody>
@@ -2753,7 +2755,7 @@ function waCopy(msg){
   });
 }
 function waQuickSend(phone,fname){
-  const msg=`Hi ${fname}! 👋 This is StarTrust Consultancy. Thank you for your enquiry — our consultant will be in touch with you shortly. Feel free to ask us anything here!`;
+  const msg=`Hi ${fname}! This is StarTrust Consultancy. Thank you for your enquiry — our consultant will be in touch with you shortly. Feel free to ask us anything here!`;
   waSend(phone,msg);
 }
 
@@ -2763,31 +2765,31 @@ function waTemplates(e){
   const isEduSvc=isEdu(svc);
   const templates=[
     {
-      label:'🙏 Acknowledgement (send immediately)',
-      msg:`Hi ${name}! 👋 Thank you for reaching out to StarTrust Consultancy.\n\nWe've received your enquiry about *${svc}* and a consultant will get back to you within 1–2 business days.\n\nIn the meantime, feel free to ask us anything here! 😊`
+      label:'Acknowledgement (send immediately)',
+      msg:`Hi ${name}, thank you for reaching out to StarTrust Consultancy.\n\nWe've received your enquiry about ${svc} and a consultant will get back to you within 1-2 business days.\n\nIn the meantime, feel free to ask us anything here!`
     },
     {
-      label:'📞 Follow-Up (if no reply)',
-      msg:`Hi ${name}, this is StarTrust Consultancy following up on your enquiry about *${svc}*.\n\nAre you still interested? We'd love to help you. When would be a good time to chat? 📅`
+      label:'Follow-Up (if no reply)',
+      msg:`Hi ${name}, this is StarTrust Consultancy following up on your enquiry about ${svc}.\n\nAre you still interested? We'd love to help you. When would be a good time to chat?`
     },
     isEduSvc?{
-      label:'🎓 School Placement Info',
-      msg:`Hi ${name}! 🎓 Thank you for your interest in studying in Singapore.\n\nWe work with top institutions and can help you with:\n• School selection & application\n• Student Pass (STP) application\n• Pre-arrival guidance\n\nWould you like to schedule a free consultation? 😊`
+      label:'School Placement Info',
+      msg:`Hi ${name}, thank you for your interest in studying in Singapore.\n\nWe work with top institutions and can help you with:\n- School selection & application\n- Student Pass (STP) application\n- Pre-arrival guidance\n\nWould you like to schedule a free consultation?`
     }:{
-      label:'💼 HR Services Info',
-      msg:`Hi ${name}! 💼 Thank you for your interest in our HR services.\n\nStarTrust helps SMEs with:\n• HR setup & policies\n• Recruitment support\n• Work pass applications\n• MOM compliance\n\nCan we schedule a free 30-min assessment? 📋`
+      label:'HR Services Info',
+      msg:`Hi ${name}, thank you for your interest in our HR services.\n\nStarTrust helps SMEs with:\n- HR setup & policies\n- Recruitment support\n- Work pass applications\n- MOM compliance\n\nCan we schedule a free 30-min assessment?`
     },
     {
-      label:'✅ Appointment Confirmation',
-      msg:`Hi ${name}! ✅ Just confirming your consultation appointment with StarTrust Consultancy.\n\n📅 Please let us know your preferred date and time and we'll confirm shortly.\n\n📍 60 Paya Lebar Road #07-54, Singapore 409051\n📧 admin@startrust-consultancy.com`
+      label:'Appointment Confirmation',
+      msg:`Hi ${name}, just confirming your consultation with StarTrust Consultancy.\n\nPlease let us know your preferred date and time and we will confirm shortly.\n\nOffice: 60 Paya Lebar Road #07-54, Singapore 409051\nEmail: admin@startrust-consultancy.com`
     },
     {
-      label:'📄 Proposal Sent',
-      msg:`Hi ${name}! 📄 We've just sent you our proposal/quotation to *${e.email}*.\n\nPlease check your inbox (and spam folder just in case). Do let us know if you have any questions — we're happy to walk you through it! 😊`
+      label:'Proposal Sent',
+      msg:`Hi ${name}, we have just sent you our proposal to ${e.email}.\n\nPlease check your inbox (and spam folder just in case). Do let us know if you have any questions — we are happy to walk you through it!`
     },
     {
-      label:'🎉 Welcome / Closed Won',
-      msg:`Hi ${name}! 🎉 Welcome to the StarTrust family!\n\nWe're excited to work with you. Our team will be in touch shortly with the next steps.\n\nThank you for choosing StarTrust Consultancy! ⭐`
+      label:'Welcome / Closed Won',
+      msg:`Hi ${name}, welcome to StarTrust Consultancy!\n\nWe are excited to work with you. Our team will be in touch shortly with the next steps.\n\nThank you for choosing StarTrust Consultancy!`
     }
   ];
   return templates;
@@ -2798,23 +2800,23 @@ function waStudent(s){
   openModal(`💬 WhatsApp — ${s.name}`,`
     <div style="display:flex;flex-direction:column;gap:0.5rem">
       ${[
-        {label:'🙏 Application Received',msg:`Hi ${s.name}! 👋 Thank you for applying through StarTrust Consultancy.\n\nWe've received your application for *${s.school||'your chosen school'}* — ${s.course||''}.\n\nOur education consultant will contact you within 1–2 business days with the next steps. 😊`},
-        {label:'🎓 STP Update',msg:`Hi ${s.name}! 🎓 We have an update on your Student Pass application.\n\nPlease contact us at your earliest convenience to discuss the next steps.\n\n📞 +65 9853 0670 | 📧 admin@startrust-consultancy.com`},
-        {label:'📋 Documents Reminder',msg:`Hi ${s.name}! 📋 This is a friendly reminder to submit the following documents for your application:\n\n• Valid passport (6+ months)\n• Academic certificates\n• Proof of funds\n• Passport-size photos\n\nPlease send them at your earliest convenience. Thank you! 😊`},
-        {label:'✅ Approval Congratulations',msg:`Hi ${s.name}! 🎉 Congratulations! Your Student Pass application has been approved!\n\nPlease contact our team to arrange the next steps for your arrival in Singapore.\n\nWelcome to Singapore! 🇸🇬`}
+        {label:'Application Received',msg:`Hi ${s.name}, thank you for applying through StarTrust Consultancy.\n\nWe have received your application for ${s.school||'your chosen school'} - ${s.course||''}.\n\nOur education consultant will contact you within 1-2 business days with the next steps.`},
+        {label:'STP Update',msg:`Hi ${s.name}, we have an update on your Student Pass application.\n\nPlease contact us at your earliest convenience to discuss the next steps.\n\nPhone: +65 9853 0670 | Email: admin@startrust-consultancy.com`},
+        {label:'Documents Reminder',msg:`Hi ${s.name}, this is a friendly reminder to submit the following documents for your application:\n\n- Valid passport (6+ months)\n- Academic certificates\n- Proof of funds\n- Passport-size photos\n\nPlease send them at your earliest convenience. Thank you!`},
+        {label:'Approval Congratulations',msg:`Hi ${s.name}, congratulations! Your Student Pass application has been approved!\n\nPlease contact our team to arrange the next steps for your arrival in Singapore.\n\nWelcome to Singapore!`}
       ].map((t,i)=>`
       <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
         <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem">${t.label}</div>
         <div style="font-size:0.8rem;line-height:1.5;margin-bottom:0.5rem" id="waSt_${i}">${t.msg}</div>
         <div style="display:flex;gap:0.5rem">
-          <button onclick="waSend('${s.phone}',document.getElementById('waSt_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send</button>
+          <button onclick="waSend('${s.phone}',document.getElementById('waSt_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.78rem;cursor:pointer;font-weight:600;box-shadow:0 2px 6px rgba(37,211,102,0.35)">Send</button>
           <button onclick="waCopy(document.getElementById('waSt_${i}').textContent)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📋 Copy</button>
         </div>
       </div>`).join('')}
       <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
         <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem">✏️ Custom</div>
         <textarea id="waStCustom" placeholder="Type your message..." style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px;outline:none;margin-bottom:0.5rem"></textarea>
-        <button onclick="waSend('${s.phone}',document.getElementById('waStCustom').value)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send</button>
+        <button onclick="waSend('${s.phone}',document.getElementById('waStCustom').value)" style="background:#25D366;color:white;border:none;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.78rem;cursor:pointer;font-weight:600;box-shadow:0 2px 6px rgba(37,211,102,0.35)">Send</button>
       </div>
     </div>`);
 }
@@ -2824,22 +2826,22 @@ function waHRClient(h){
   openModal(`💬 WhatsApp — ${h.company}`,`
     <div style="display:flex;flex-direction:column;gap:0.5rem">
       ${[
-        {label:'👋 Introduction',msg:`Hi ${h.contactName||'there'}! 👋 This is StarTrust Consultancy reaching out regarding our HR services for *${h.company}*.\n\nWe'd love to schedule a time to discuss how we can support your HR needs. When would be convenient? 😊`},
-        {label:'📋 Contract Renewal',msg:`Hi ${h.contactName||'there'}! This is a friendly reminder that your StarTrust HR services contract is coming up for renewal.\n\nWould you like to schedule a review meeting? We have some new services that may benefit ${h.company}! 😊`},
-        {label:'✅ Service Update',msg:`Hi ${h.contactName||'there'}! Just a quick update from StarTrust Consultancy regarding your HR services.\n\nPlease feel free to reach out if you have any questions or need any assistance. We're always here to help! 💼`}
+        {label:'Introduction',msg:`Hi ${h.contactName||'there'}, this is StarTrust Consultancy reaching out regarding our HR services for ${h.company}.\n\nWe would love to schedule a time to discuss how we can support your HR needs. When would be convenient?`},
+        {label:'Contract Renewal',msg:`Hi ${h.contactName||'there'}, this is a friendly reminder that your StarTrust HR services contract is coming up for renewal.\n\nWould you like to schedule a review meeting? We have some new services that may benefit ${h.company}!`},
+        {label:'Service Update',msg:`Hi ${h.contactName||'there'}, just a quick update from StarTrust Consultancy regarding your HR services.\n\nPlease feel free to reach out if you have any questions or need any assistance. We are always here to help!`}
       ].map((t,i)=>`
       <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
         <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem">${t.label}</div>
         <div style="font-size:0.8rem;line-height:1.5;margin-bottom:0.5rem" id="waHR_${i}">${t.msg}</div>
         <div style="display:flex;gap:0.5rem">
-          <button onclick="waSend('${h.phone}',document.getElementById('waHR_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send</button>
+          <button onclick="waSend('${h.phone}',document.getElementById('waHR_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.78rem;cursor:pointer;font-weight:600;box-shadow:0 2px 6px rgba(37,211,102,0.35)">Send</button>
           <button onclick="waCopy(document.getElementById('waHR_${i}').textContent)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📋 Copy</button>
         </div>
       </div>`).join('')}
       <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
         <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem">✏️ Custom</div>
         <textarea id="waHRCustom" placeholder="Type your message..." style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px;outline:none;margin-bottom:0.5rem"></textarea>
-        <button onclick="waSend('${h.phone}',document.getElementById('waHRCustom').value)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send</button>
+        <button onclick="waSend('${h.phone}',document.getElementById('waHRCustom').value)" style="background:#25D366;color:white;border:none;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.78rem;cursor:pointer;font-weight:600;box-shadow:0 2px 6px rgba(37,211,102,0.35)">Send</button>
       </div>
     </div>`);
 }
