@@ -505,6 +505,7 @@ function renderDashboard(){
 // ENQUIRIES
 // ══════════════════════════════════════
 function renderEnquiries(filter=''){
+  setTimeout(()=>{if(typeof syncWeb3Forms==='function')syncWeb3Forms().catch(()=>{});},800);
   let data=DB.enquiries;
   if(filter)data=data.filter(e=>e.status===filter);
   return `
@@ -515,7 +516,10 @@ function renderEnquiries(filter=''){
   <div class="toolbar">
     <div class="toolbar-title">${data.length} enquiries</div>
     <div class="search-wrap">🔍 <input id="enqSearch" placeholder="Search..." oninput="filterEnq()"></div>
-    ${isDirector()?`<button class="btn-primary" onclick="openAddEnquiry()">+ Add Enquiry</button>`:''}
+    ${isDirector()?`<div style="display:flex;gap:0.5rem">
+      <button class="btn-sec" onclick="syncWeb3Forms()">🔄 Sync Now</button>
+      <button class="btn-primary" onclick="openAddEnquiry()">+ Add Enquiry</button>
+    </div>`:''}
     ${isDirector()?`<button class="btn-sec" onclick="exportEnquiries()">📤 Export</button>`:''}
   </div>
   <div class="tbl-wrap">
@@ -539,6 +543,7 @@ function renderEnqRows(data){
     <td style="font-size:0.78rem">${e.assignedTo||'—'}</td>
     <td><div class="act-row">
       <button class="act primary" onclick="viewEnquiry(${e.id})">View</button>
+      ${e.phone?`<button class="act" onclick="waQuickSend('${e.phone}','${e.fname}')" title="WhatsApp" style="background:#25D366;color:white;border:none">💬</button>`:''}
       <button class="convert-btn" onclick="convertToProject(${e.id})" title="Convert to Project">→ Project</button>
       ${isDirector()?`<button class="act danger" onclick="delEnquiry(${e.id})">🗑</button>`:''}
     </div></td>
@@ -593,7 +598,29 @@ function viewEnquiry(id){
         </div>
         <div class="detail-item detail-full"><label>Notes</label><textarea id="eNotes" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:80px;outline:none">${e.notes||''}</textarea></div>
       </div>
-    </div>`,
+    </div>
+    ${e.phone?`<div class="detail-section">
+      <h4>💬 WhatsApp Messages</h4>
+      <div style="display:flex;flex-direction:column;gap:0.5rem">
+        ${waTemplates(e).map((t,i)=>`
+        <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem">${t.label}</div>
+          <div style="font-size:0.8rem;color:var(--slate);line-height:1.5;margin-bottom:0.5rem" id="waTpl_${i}">${t.msg}</div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <button onclick="waSend('${e.phone}',document.getElementById('waTpl_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;gap:0.3rem">📤 Send on WhatsApp</button>
+            <button onclick="waCopy(document.getElementById('waTpl_${i}').textContent)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📋 Copy</button>
+          </div>
+        </div>`).join('')}
+        <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem">✏️ Custom Message</div>
+          <textarea id="waCustomMsg" placeholder="Type your message..." style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.65rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px;outline:none;margin-bottom:0.5rem"></textarea>
+          <div style="display:flex;gap:0.5rem">
+            <button onclick="waSend('${e.phone}',document.getElementById('waCustomMsg').value)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send on WhatsApp</button>
+            <button onclick="waCopy(document.getElementById('waCustomMsg').value)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>`:''}`,
     `<button class="btn-sec" onclick="closeModal()">Cancel</button>
      <button class="btn-primary" onclick="saveEnquiry(${id})">Save Changes</button>`
   );
@@ -606,6 +633,59 @@ function saveEnquiry(id){
   e.assignedTo=document.getElementById('eAssigned').value;
   e.notes=document.getElementById('eNotes').value;
   saveDB();updateBadges();closeModal();nav('enquiries');showToast('Enquiry updated!');
+}
+
+function showFormspreeHelp(){
+  openModal('📧 Form Submission Sync',`
+    <div style="font-size:0.85rem;line-height:1.7;color:var(--slate)">
+      <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:0.75rem;margin-bottom:1rem">
+        <strong>✅ Now using Web3Forms — auto-sync enabled!</strong><br>
+        New submissions from the website will appear here automatically when you click Sync below.
+      </div>
+      <p style="margin-bottom:0.5rem">If a submission is missing, click <strong>🔄 Sync Now</strong> to pull the latest from Web3Forms.</p>
+      <div style="background:rgba(79,70,229,0.06);border-radius:8px;padding:0.75rem;margin-top:1rem;font-size:0.78rem;color:var(--muted)">
+        💡 Submissions from the same browser auto-appear instantly. Cross-device submissions sync when you click Sync Now.
+      </div>
+    </div>`);
+}
+
+async function syncWeb3Forms(){
+  showToast('Syncing from Web3Forms…');
+  try{
+    const resp=await fetch('https://api.web3forms.com/submissions?apikey=1d7d41ab-5b55-4f35-bb01-e3bb1217e434&limit=50',{
+      headers:{'Accept':'application/json'}
+    });
+    const data=await resp.json();
+    if(!data.success||!data.data)throw new Error('No data');
+    const synced=JSON.parse(localStorage.getItem('st_w3_synced')||'[]');
+    let added=0;
+    data.data.forEach(sub=>{
+      const uid=sub.id||sub.created_at;
+      if(synced.includes(uid))return;
+      // Map Web3Forms fields to CRM entry
+      const fields=sub.data||sub;
+      const fname=(fields['First Name']||fields.name||'').split(' ')[0]||'Unknown';
+      const lname=(fields['First Name']||fields.name||'').split(' ').slice(1).join(' ')||fields['Last Name']||'';
+      DB.enquiries.unshift({
+        id:DB.nextId.e++,
+        fname,lname,
+        email:fields.email||'',
+        phone:fields['Phone / WhatsApp']||fields.phone||'',
+        company:fields['Company Name']||fields.company||'',
+        service:fields.Service||fields.service||'General',
+        message:fields.Message||fields.message||'',
+        status:'New',followup:'',notes:'[Via Web3Forms]',
+        date:sub.created_at?sub.created_at.split('T')[0]:new Date().toISOString().split('T')[0]
+      });
+      synced.push(uid);added++;
+    });
+    localStorage.setItem('st_w3_synced',JSON.stringify(synced));
+    saveDB();updateBadges();nav('enquiries');
+    showToast(added>0?`✅ ${added} new enquiry synced!`:'✅ Already up to date!');
+  }catch(err){
+    showToast('⚠️ Sync failed — check connection');
+    console.error(err);
+  }
 }
 
 function openAddEnquiry(){
@@ -815,6 +895,7 @@ function renderHRClients(){
         <td><span class="badge ${h.status==='Active'?'b-active':'b-pending'}">${h.status||'Active'}</span></td>
         <td><div class="act-row">
           <button class="act primary" onclick="viewHR(${h.id})">View</button>
+          ${h.phone?`<button class="act" onclick="waHRClient(DB.hrclients.find(x=>x.id===${h.id}))" style="background:#25D366;color:white;border:none" title="WhatsApp">💬</button>`:''}
           ${isDirector()?`<button class="act danger" onclick="delHR(${h.id})">🗑</button>`:''}
         </div></td>
       </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No HR clients yet</td></tr>'}</tbody>
@@ -992,6 +1073,7 @@ function renderCandidates(){
         <td>${c.resumeUrl?`<a href="${c.resumeUrl}" target="_blank" style="color:var(--indigo);font-size:0.78rem;font-weight:600">📄 View</a>`:'<span style="color:var(--muted);font-size:0.75rem">No file</span>'}</td>
         <td><div class="act-row">
           <button class="act primary" onclick="viewCandidate(${c.id})">View</button>
+          ${c.phone?`<button class="act" onclick="waQuickSend('${c.phone}','${c.fname}')" style="background:#25D366;color:white;border:none" title="WhatsApp">💬</button>`:''}
           ${isDirector()?`<button class="act danger" onclick="delCandidate(${c.id})">🗑</button>`:''}
         </div></td>
       </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No candidates yet</td></tr>'}</tbody>
@@ -1148,6 +1230,7 @@ function renderStudents(){
         ${isDirector()?`<td>${s.schoolPaid?`<span style="color:var(--green);font-size:0.78rem;font-weight:700">✅ ${s.paymentDate||''}</span>`:`<span style="color:var(--muted);font-size:0.75rem">Not yet</span>`}</td>`:''}
         <td><div class="act-row">
           <button class="act primary" onclick="viewStudent(${s.id})">View</button>
+          ${s.phone?`<button class="act" onclick="waStudent(DB.students.find(x=>x.id===${s.id}))" style="background:#25D366;color:white;border:none" title="WhatsApp">💬</button>`:''}
           ${isDirector()?`<button class="act danger" onclick="delStudent(${s.id})">🗑</button>`:''}
         </div></td>
       </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No students yet</td></tr>'}</tbody>
@@ -2653,6 +2736,114 @@ function delCustomLeaveType(name){
   localStorage.setItem('st_leave_types',JSON.stringify(custom));
   renderCustomLeaveList();showToast(`"${name}" removed!`);
 }
+// ══════════════════════════════════════
+// WHATSAPP ENGINE
+// ══════════════════════════════════════
+function waNum(phone){return phone.replace(/[\s\-\(\)\+]/g,'');}
+function waSend(phone,msg){
+  if(!msg||!msg.trim()){showToast('Message is empty!');return;}
+  const num=waNum(phone);
+  const url=`https://wa.me/${num}?text=${encodeURIComponent(msg.trim())}`;
+  window.open(url,'_blank');
+}
+function waCopy(msg){
+  if(!msg||!msg.trim()){showToast('Message is empty!');return;}
+  navigator.clipboard.writeText(msg.trim()).then(()=>showToast('✅ Copied to clipboard!')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=msg;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ Copied!');
+  });
+}
+function waQuickSend(phone,fname){
+  const msg=`Hi ${fname}! 👋 This is StarTrust Consultancy. Thank you for your enquiry — our consultant will be in touch with you shortly. Feel free to ask us anything here!`;
+  waSend(phone,msg);
+}
+
+function waTemplates(e){
+  const name=e.fname||'there';
+  const svc=e.service||'our services';
+  const isEduSvc=isEdu(svc);
+  const templates=[
+    {
+      label:'🙏 Acknowledgement (send immediately)',
+      msg:`Hi ${name}! 👋 Thank you for reaching out to StarTrust Consultancy.\n\nWe've received your enquiry about *${svc}* and a consultant will get back to you within 1–2 business days.\n\nIn the meantime, feel free to ask us anything here! 😊`
+    },
+    {
+      label:'📞 Follow-Up (if no reply)',
+      msg:`Hi ${name}, this is StarTrust Consultancy following up on your enquiry about *${svc}*.\n\nAre you still interested? We'd love to help you. When would be a good time to chat? 📅`
+    },
+    isEduSvc?{
+      label:'🎓 School Placement Info',
+      msg:`Hi ${name}! 🎓 Thank you for your interest in studying in Singapore.\n\nWe work with top institutions and can help you with:\n• School selection & application\n• Student Pass (STP) application\n• Pre-arrival guidance\n\nWould you like to schedule a free consultation? 😊`
+    }:{
+      label:'💼 HR Services Info',
+      msg:`Hi ${name}! 💼 Thank you for your interest in our HR services.\n\nStarTrust helps SMEs with:\n• HR setup & policies\n• Recruitment support\n• Work pass applications\n• MOM compliance\n\nCan we schedule a free 30-min assessment? 📋`
+    },
+    {
+      label:'✅ Appointment Confirmation',
+      msg:`Hi ${name}! ✅ Just confirming your consultation appointment with StarTrust Consultancy.\n\n📅 Please let us know your preferred date and time and we'll confirm shortly.\n\n📍 60 Paya Lebar Road #07-54, Singapore 409051\n📧 admin@startrust-consultancy.com`
+    },
+    {
+      label:'📄 Proposal Sent',
+      msg:`Hi ${name}! 📄 We've just sent you our proposal/quotation to *${e.email}*.\n\nPlease check your inbox (and spam folder just in case). Do let us know if you have any questions — we're happy to walk you through it! 😊`
+    },
+    {
+      label:'🎉 Welcome / Closed Won',
+      msg:`Hi ${name}! 🎉 Welcome to the StarTrust family!\n\nWe're excited to work with you. Our team will be in touch shortly with the next steps.\n\nThank you for choosing StarTrust Consultancy! ⭐`
+    }
+  ];
+  return templates;
+}
+
+// WhatsApp for Students
+function waStudent(s){
+  openModal(`💬 WhatsApp — ${s.name}`,`
+    <div style="display:flex;flex-direction:column;gap:0.5rem">
+      ${[
+        {label:'🙏 Application Received',msg:`Hi ${s.name}! 👋 Thank you for applying through StarTrust Consultancy.\n\nWe've received your application for *${s.school||'your chosen school'}* — ${s.course||''}.\n\nOur education consultant will contact you within 1–2 business days with the next steps. 😊`},
+        {label:'🎓 STP Update',msg:`Hi ${s.name}! 🎓 We have an update on your Student Pass application.\n\nPlease contact us at your earliest convenience to discuss the next steps.\n\n📞 +65 9853 0670 | 📧 admin@startrust-consultancy.com`},
+        {label:'📋 Documents Reminder',msg:`Hi ${s.name}! 📋 This is a friendly reminder to submit the following documents for your application:\n\n• Valid passport (6+ months)\n• Academic certificates\n• Proof of funds\n• Passport-size photos\n\nPlease send them at your earliest convenience. Thank you! 😊`},
+        {label:'✅ Approval Congratulations',msg:`Hi ${s.name}! 🎉 Congratulations! Your Student Pass application has been approved!\n\nPlease contact our team to arrange the next steps for your arrival in Singapore.\n\nWelcome to Singapore! 🇸🇬`}
+      ].map((t,i)=>`
+      <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem">${t.label}</div>
+        <div style="font-size:0.8rem;line-height:1.5;margin-bottom:0.5rem" id="waSt_${i}">${t.msg}</div>
+        <div style="display:flex;gap:0.5rem">
+          <button onclick="waSend('${s.phone}',document.getElementById('waSt_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send</button>
+          <button onclick="waCopy(document.getElementById('waSt_${i}').textContent)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📋 Copy</button>
+        </div>
+      </div>`).join('')}
+      <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem">✏️ Custom</div>
+        <textarea id="waStCustom" placeholder="Type your message..." style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px;outline:none;margin-bottom:0.5rem"></textarea>
+        <button onclick="waSend('${s.phone}',document.getElementById('waStCustom').value)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send</button>
+      </div>
+    </div>`);
+}
+
+// WhatsApp for HR Clients
+function waHRClient(h){
+  openModal(`💬 WhatsApp — ${h.company}`,`
+    <div style="display:flex;flex-direction:column;gap:0.5rem">
+      ${[
+        {label:'👋 Introduction',msg:`Hi ${h.contactName||'there'}! 👋 This is StarTrust Consultancy reaching out regarding our HR services for *${h.company}*.\n\nWe'd love to schedule a time to discuss how we can support your HR needs. When would be convenient? 😊`},
+        {label:'📋 Contract Renewal',msg:`Hi ${h.contactName||'there'}! This is a friendly reminder that your StarTrust HR services contract is coming up for renewal.\n\nWould you like to schedule a review meeting? We have some new services that may benefit ${h.company}! 😊`},
+        {label:'✅ Service Update',msg:`Hi ${h.contactName||'there'}! Just a quick update from StarTrust Consultancy regarding your HR services.\n\nPlease feel free to reach out if you have any questions or need any assistance. We're always here to help! 💼`}
+      ].map((t,i)=>`
+      <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem">${t.label}</div>
+        <div style="font-size:0.8rem;line-height:1.5;margin-bottom:0.5rem" id="waHR_${i}">${t.msg}</div>
+        <div style="display:flex;gap:0.5rem">
+          <button onclick="waSend('${h.phone}',document.getElementById('waHR_${i}').textContent)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send</button>
+          <button onclick="waCopy(document.getElementById('waHR_${i}').textContent)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📋 Copy</button>
+        </div>
+      </div>`).join('')}
+      <div style="border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;background:var(--bg)">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:0.3rem">✏️ Custom</div>
+        <textarea id="waHRCustom" placeholder="Type your message..." style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.5rem;font-size:0.82rem;font-family:'DM Sans',sans-serif;resize:vertical;min-height:70px;outline:none;margin-bottom:0.5rem"></textarea>
+        <button onclick="waSend('${h.phone}',document.getElementById('waHRCustom').value)" style="background:#25D366;color:white;border:none;border-radius:6px;padding:0.3rem 0.75rem;font-size:0.75rem;cursor:pointer">📤 Send</button>
+      </div>
+    </div>`);
+}
+
 function openModal(title,body,foot){
   document.getElementById('modalTitle').textContent=title;
   document.getElementById('modalBody').innerHTML=body;
